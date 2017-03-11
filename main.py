@@ -87,7 +87,7 @@ def start():
         manipulationManager.my_constructor(
             SCENEGRAPH = scenegraph,
             NAVIGATION_NODE = viewingSetup.navigation_node,
-            POINTER_TRACKING_STATION = "tracking-art-pointer-1",
+            POINTER_TRACKING_STATION = "tracking-art-pointer-2",
             TRACKING_TRANSMITTER_OFFSET = _tracking_transmitter_offset,
             POINTER_DEVICE_STATION = "device-pointer-1",
             HEAD_NODE = viewingSetup.head_node,
