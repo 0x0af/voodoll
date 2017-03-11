@@ -7,7 +7,6 @@ import avango.script
 import math
 from avango.script import field_has_changed
 import avango.daemon
-from enum import Enum
 from gi.overrides.keysyms import R
 
 
@@ -148,8 +147,6 @@ class ManipulationTechnique(avango.script.Script):
                             | avango.gua.PickingOptions.GET_NORMALS \
                             | avango.gua.PickingOptions.GET_WORLD_POSITIONS \
                             | avango.gua.PickingOptions.GET_WORLD_NORMALS
-
-        ### resources ###
 
         ## init sensors
         self.pointer_tracking_sensor = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
@@ -620,90 +617,3 @@ class Homer(ManipulationTechnique):
                                                      avango.gua.make_scale_mat(self.dragged_node.WorldTransform.value.get_scale())
 
             self.position_hand_at_target()
-
-
-class VooDollState(Enum):
-    DOLL_SELECTION = 1
-    NEEDLE_SELECTION = 2
-    MANIPULATION = 3
-
-
-class VooDoll(ManipulationTechnique):
-
-    ## constructor
-    def __init__(self):
-        self.super(ManipulationTechnique).__init__()
-
-    def my_constructor(self,
-        SCENEGRAPH = None,
-        NAVIGATION_NODE = None,
-        POINTER_TRACKING_STATION = None,
-        TRACKING_TRANSMITTER_OFFSET = avango.gua.make_identity_mat(),
-        POINTER_DEVICE_STATION = None,
-        HEAD_NODE = None,
-        ):
-
-        ManipulationTechnique.my_constructor(self, SCENEGRAPH, NAVIGATION_NODE, POINTER_TRACKING_STATION, TRACKING_TRANSMITTER_OFFSET, POINTER_DEVICE_STATION) # call base class constructor
-
-
-        ### external references ###
-        self.HEAD_NODE = HEAD_NODE
-        self.NAVIGATION_NODE = NAVIGATION_NODE
-
-        ### additional parameters ###
-
-        ## visualization
-        self.ray_length = 2.0 # in meter
-        self.ray_thickness = 0.0075 # in meter
-
-        self.intersection_point_size = 0.01 # in meter
-
-
-        self.state = VooDollState.DOLL_SELECTION
-
-        self.doll = None
-        self.doll_ref = None
-
-        self.needle = None
-        self.needle_ref = None
-
-        self.doll_pointer = None
-
-
-        ### additional resources ###
-        _loader = avango.gua.nodes.TriMeshLoader()
-
-        self.offset_node = avango.gua.nodes.TransformNode(Name = "homer_offset_node")
-        NAVIGATION_NODE.Children.value.append(self.offset_node)
-
-        self.pointer_node.Parent.value.Children.value.remove(self.pointer_node) # remove pointer from navigation node
-        self.offset_node.Children.value.append(self.pointer_node)
-
-        self.ray_geometry = _loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
-        self.ray_geometry.Transform.value = \
-            avango.gua.make_trans_mat(0.0,0.0,self.ray_length * -0.5) * \
-            avango.gua.make_rot_mat(-90.0,1,0,0) * \
-            avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
-        self.ray_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
-        self.pointer_node.Children.value.append(self.ray_geometry)
-
-        self.intersection_geometry = _loader.create_geometry_from_file("intersection_geometry", "data/objects/sphere.obj", avango.gua.LoaderFlags.DEFAULTS)
-        self.intersection_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
-        SCENEGRAPH.Root.value.Children.value.append(self.intersection_geometry)
-
-
-        ### set initial states ###
-        self.enable(False)
-
-
-    ### functions ###
-    def enable(self, BOOL): # extend respective base-class function
-        ManipulationTechnique.enable(self, BOOL) # call base-class function
-
-        if self.enable_flag == False:
-            self.intersection_geometry.Tags.value = ["invisible"] # set intersection point invisible
-
-    ### callback functions ###
-    def evaluate(self): # implement respective base-class function
-        if self.enable_flag == False:
-            return
