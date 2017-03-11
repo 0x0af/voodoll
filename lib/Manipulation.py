@@ -7,6 +7,7 @@ import avango.script
 import math
 from avango.script import field_has_changed
 import avango.daemon
+from VooDoll import VooDoll
 from gi.overrides.keysyms import R
 
 
@@ -16,6 +17,7 @@ class ManipulationManager(avango.script.Script):
     sf_key_2 = avango.SFBool()
     sf_key_3 = avango.SFBool()
     sf_key_4 = avango.SFBool()
+    sf_key_5 = avango.SFBool()
 
     ## constructor
     def __init__(self):
@@ -41,6 +43,7 @@ class ManipulationManager(avango.script.Script):
         self.sf_key_2.connect_from(self.keyboard_sensor.Button17)  # key 2
         self.sf_key_3.connect_from(self.keyboard_sensor.Button18)  # key 3
         self.sf_key_4.connect_from(self.keyboard_sensor.Button19)  # key 4
+        self.sf_key_5.connect_from(self.keyboard_sensor.Button20)  # key 5
 
         ## init manipulation techniques
         self.virtualRay = VirtualRay()
@@ -58,6 +61,12 @@ class ManipulationManager(avango.script.Script):
         self.homer = Homer()
         self.homer.my_constructor(SCENEGRAPH, NAVIGATION_NODE, POINTER_TRACKING_STATION, TRACKING_TRANSMITTER_OFFSET,
                                   POINTER_DEVICE_STATION, HEAD_NODE)
+
+        self.voodoll = VooDoll()
+        self.voodoll.my_constructor(SCENEGRAPH, NAVIGATION_NODE,
+                                    [[POINTER_TRACKING_STATION, TRACKING_TRANSMITTER_OFFSET, "device-pointer-2"],
+                                     [POINTER_TRACKING_STATION, TRACKING_TRANSMITTER_OFFSET, "device-pointer-1"]],
+                                    HEAD_NODE)
 
         ### set initial states ###
         self.set_manipulation_technique(0)  # switch to virtual-ray manipulation technique
@@ -85,6 +94,11 @@ class ManipulationManager(avango.script.Script):
             print("switch to HOMER technique")
             self.active_manipulation_technique = self.homer
 
+        elif INT == 4: # VooDoll
+            print("switch to HOMER technique")
+            self.active_manipulation_technique = self.voodoll
+
+
         self.active_manipulation_technique.enable(True)
 
     ### callback functions ###
@@ -107,6 +121,11 @@ class ManipulationManager(avango.script.Script):
     def sf_key_4_changed(self):
         if self.sf_key_4.value == True:  # key is pressed
             self.set_manipulation_technique(3)  # switch to HOMER manipulation technique
+
+    @field_has_changed(sf_key_5)
+    def sf_key_5_changed(self):
+        if self.sf_key_5.value == True:  # key is pressed
+            self.set_manipulation_technique(4)  # switch to VooDoll manipulation technique
 
 
 
