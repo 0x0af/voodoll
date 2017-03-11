@@ -7,7 +7,7 @@ import avango.script
 import math
 from avango.script import field_has_changed
 import avango.daemon
-from VooDoll import VooDoll
+from lib.VooDoll import VooDoll
 from gi.overrides.keysyms import R
 
 
