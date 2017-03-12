@@ -18,6 +18,7 @@ def init_art_tracking():
     _dtrack.stations[11] = avango.daemon.Station('tracking-art-pointer-1') # ednet pointer
     _dtrack.stations[1] = avango.daemon.Station('tracking-art-pointer-2') # AUGUST pointer
     _dtrack.stations[18] = avango.daemon.Station('tracking-art-pointer-3') # gyromouse
+    _dtrack.stations[3] = avango.daemon.Station('tracking-art-pointer-yellow')  # speedlink yellow
 
     #_dtrack.stations[4] = avango.daemon.Station('tracking-art-prop-1') # LHT1 prop
     #_dtrack.stations[12] = avango.daemon.Station('tracking-art-prop-2') # black-cube prop    
@@ -232,6 +233,28 @@ def init_pointer3(): # Gyromouse
     print("Pointer3 NOT found!")
 
 
+def init_pointer_yellow():  # speedlink yellow
+    _string = get_event_string(1, "HID-compliant Mouse HID-compliant Mouse")
+    _string = _string.split()
+
+    if len(_string) > 0:
+        _string = _string[0]
+
+        _pointer = avango.daemon.HIDInput()
+        _pointer.station = avango.daemon.Station("device-pointer-yellow")  # create a station to propagate the input events
+        _pointer.device = _string
+
+        _pointer.buttons[0] = "EV_KEY::KEY_PAGEUP"
+        _pointer.buttons[1] = "EV_KEY::KEY_PAGEDOWN"
+
+        device_list.append(_pointer)
+
+        print("Pointer Yellow started at:", _string)
+
+        return
+
+    print("Pointer Yellow NOT found!")
+
 
 ## Gets the event string of a given input device.
 # @param STRING_NUM Integer saying which device occurence should be returned.
@@ -275,5 +298,6 @@ init_mouse()
 init_pointer1()
 init_pointer2()
 init_pointer3()
+init_pointer_yellow()
 
 avango.daemon.run(device_list)

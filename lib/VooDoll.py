@@ -6,6 +6,7 @@ from avango.script import field_has_changed
 import avango.daemon
 from gi.overrides.keysyms import R
 from enum import Enum
+import copy
 
 
 class VooDollState(Enum):
@@ -15,7 +16,8 @@ class VooDollState(Enum):
 
 
 class VooDoll(avango.script.Script):
-    #sf_buttons = avango.MFBool()
+    sf_button_1 = avango.SFBool()
+    sf_button_2 = avango.SFBool()
 
     ## constructor
     def __init__(self):
@@ -24,9 +26,12 @@ class VooDoll(avango.script.Script):
     def my_constructor(self,
         SCENEGRAPH = None,
         NAVIGATION_NODE = None,
-        POINTERS = None,
-        HEAD_NODE = None,
-        ):
+        TRACKING_TRANSMITTER_OFFSET=avango.gua.make_identity_mat(),
+        POINTER_TRACKING_STATION_1=None,
+        POINTER_DEVICE_STATION_1=None,
+        POINTER_TRACKING_STATION_2=None,
+        POINTER_DEVICE_STATION_2=None,
+        HEAD_NODE = None):
         """
         :param SCENEGRAPH:
         :param NAVIGATION_NODE:
@@ -71,45 +76,61 @@ class VooDoll(avango.script.Script):
 
         self.doll_pointer = None
 
-        self.pointer_tracking_sensors = []
-        self.pointer_device_sensors = []
-        self.pointer_nodes = []
-        self.mf_buttons = avango.MFBool()
+        #region Pointer 1
+        self.pointer_tracking_sensor_1 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
+        self.pointer_tracking_sensor_1.Station.value = POINTER_TRACKING_STATION_1
+        self.pointer_tracking_sensor_1.TransmitterOffset.value = TRACKING_TRANSMITTER_OFFSET
 
-        for pointer in POINTERS:
-            pointer_tracking_sensor = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
-            pointer_tracking_sensor.Station.value = pointer[0]
-            pointer_tracking_sensor.TransmitterOffset.value = pointer[1]
+        self.pointer_device_sensor_1 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
+        self.pointer_device_sensor_1.Station.value = POINTER_DEVICE_STATION_1
 
-            self.pointer_tracking_sensors.append(pointer_tracking_sensor)
+        self.sf_button_1.connect_from(self.pointer_device_sensor_1.Button0)
 
-            pointer_device_sensor = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
-            pointer_device_sensor.Station.value = pointer[2]
+        self.pointer_node_1 = avango.gua.nodes.TransformNode(Name="pointer_node_1")
+        self.pointer_node_1.Transform.connect_from(self.pointer_tracking_sensor_1.Matrix)
+        self.pointer_node_1.Tags.value = ["invisible"]
 
-            self.pointer_device_sensors.append(pointer_device_sensor)
+        NAVIGATION_NODE.Children.value.append(self.pointer_node_1)
+        #endregion
 
-            #sf_button = avango.SFBool()
-            #sf_button.connect_from(pointer_device_sensor.Button0)
+        #region Pointer 2
+        self.pointer_tracking_sensor_2 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
+        self.pointer_tracking_sensor_2.Station.value = POINTER_TRACKING_STATION_2
+        self.pointer_tracking_sensor_2.TransmitterOffset.value = TRACKING_TRANSMITTER_OFFSET
 
-            #self.mf_buttons.value.append(sf_button)
+        self.pointer_device_sensor_2 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
+        self.pointer_device_sensor_2.Station.value = POINTER_DEVICE_STATION_2
 
-            pointer_node = avango.gua.nodes.TransformNode(Name="pointer_node_" + str(len(self.pointer_tracking_sensors)))
-            pointer_node.Transform.connect_from(pointer_tracking_sensor.Matrix)
-            pointer_node.Tags.value = ["invisible"]
+        self.sf_button_2.connect_from(self.pointer_device_sensor_2.Button0)
 
-            self.pointer_nodes.append(pointer_node)
-            NAVIGATION_NODE.Children.value.append(pointer_node)
+        self.pointer_node_2 = avango.gua.nodes.TransformNode(Name="pointer_node_2")
+        self.pointer_node_2.Transform.connect_from(self.pointer_tracking_sensor_2.Matrix)
+        self.pointer_node_2.Tags.value = ["invisible"]
+
+        NAVIGATION_NODE.Children.value.append(self.pointer_node_2)
+        #endregion
 
         _loader = avango.gua.nodes.TriMeshLoader()
 
-        self.ray_geometry = _loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
-        self.ray_geometry.Transform.value = \
+        self.ray_geometry_1 = _loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
+        self.ray_geometry_1.Transform.value = \
             avango.gua.make_trans_mat(0.0,0.0,self.ray_length * -0.5) * \
             avango.gua.make_rot_mat(-90.0,1,0,0) * \
             avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
 
-        self.ray_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
+        self.ray_geometry_1.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
 
+        self.ray_geometry_2 = _loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj",
+                                                                avango.gua.LoaderFlags.DEFAULTS)
+        self.ray_geometry_2.Transform.value = \
+            avango.gua.make_trans_mat(0.0, 0.0, self.ray_length * -0.5) * \
+            avango.gua.make_rot_mat(-90.0, 1, 0, 0) * \
+            avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
+
+        self.ray_geometry_2.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 0.0, 1.0))
+
+        self.pointer_node_1.Children.value.append(self.ray_geometry_1)
+        self.pointer_node_2.Children.value.append(self.ray_geometry_2)
 
         self.intersection_geometry = _loader.create_geometry_from_file("intersection_geometry", "data/objects/sphere.obj", avango.gua.LoaderFlags.DEFAULTS)
         self.intersection_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
@@ -136,11 +157,21 @@ class VooDoll(avango.script.Script):
         self.enable_flag = BOOL
 
         if BOOL:
-            pass  # set tool visible
+            self.pointer_node_1.Tags.value = []
+            self.pointer_node_2.Tags.value = []
         else:
-            pass  # set tool invisible
+            self.pointer_node_1.Tags.value = ["invisible"]
+            self.pointer_node_2.Tags.value = ["invisible"]
 
     ### callback functions ###
     def evaluate(self): # implement respective base-class function
         if self.enable_flag == False:
             return
+
+    @field_has_changed(sf_button_1)
+    def sf_button_1_changed(self):
+        print("button 1" + str(self.sf_button_1.value))
+
+    @field_has_changed(sf_button_2)
+    def sf_button_2_changed(self):
+        print("button 2" + str(self.sf_button_2.value))
