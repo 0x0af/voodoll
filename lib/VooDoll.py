@@ -14,6 +14,10 @@ class VooDollState(Enum):
     NEEDLE_SELECTION = 2
     MANIPULATION = 3
 
+class VooDollPointer(Enum):
+    POINTER_NONE = 0
+    POINTER_1 = 1
+    POINTER_2 = 2
 
 class VooDoll(avango.script.Script):
     sf_button_1 = avango.SFBool()
@@ -53,7 +57,8 @@ class VooDoll(avango.script.Script):
 
         self.enable_flag = False
 
-        self.pick_result = None
+        self.pick_result_1 = None
+        self.pick_result_2 = None
         self.white_list = []
         self.black_list = ["invisible"]
         self.pick_options = avango.gua.PickingOptions.PICK_ONLY_FIRST_OBJECT \
@@ -74,7 +79,7 @@ class VooDoll(avango.script.Script):
         self.needle = None
         self.needle_ref = None
 
-        self.doll_pointer = None
+        self.doll_pointer = VooDollPointer.POINTER_NONE
 
         #region Pointer 1
         self.pointer_tracking_sensor_1 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
@@ -160,6 +165,36 @@ class VooDoll(avango.script.Script):
         n_mat = node.WorldTransform.value
         r_mat = reference.WorldTransform.value
         return avango.gua.make_inverse_mat(n_mat) * r_mat
+
+    def calc_ray_intersection(self, pointer_node):
+        self.ray.Origin.value = pointer_node.WorldTransform.value.get_translate()
+        _vec = avango.gua.make_rot_mat(pointer_node.WorldTransform.value.get_rotate()) * avango.gua.Vec3(0.0, 0.0, -1.0)
+        _vec = avango.gua.Vec3(_vec.x, _vec.y, _vec.z)
+        self.ray.Direction.value = _vec * self.ray_length
+        return self.SCENEGRAPH.ray_test(self.ray, self.pick_options, self.white_list, self.black_list)
+
+    @staticmethod
+    def filter_pick_result(pick_result_candidate):
+        if len(pick_result_candidate.value) > 0:
+            return pick_result_candidate.value[0]
+        else:
+            return None
+
+    def calc_pick_result(self):
+        if self.state == VooDollState.DOLL_SELECTION:
+            self.pick_result_1 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_1))
+            self.pick_result_2 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_2))
+        elif self.state == VooDollState.NEEDLE_SELECTION:
+            if self.doll_pointer == VooDollPointer.POINTER_2:
+                self.pick_result_1 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_1))
+                self.pick_result_2 = None
+            elif self.doll_pointer == VooDollPointer.POINTER_1:
+                self.pick_result_1 = None
+                self.pick_result_2 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_2))
+            else:
+                self.pick_result_1 = None
+                self.pick_result_2 = None
+
 
     ### functions ###
     def enable(self, BOOL): # extend respective base-class function
