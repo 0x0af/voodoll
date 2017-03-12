@@ -100,9 +100,9 @@ class VooDoll(avango.script.Script):
             self.pointer_nodes.append(pointer_node)
             NAVIGATION_NODE.Children.value.append(pointer_node)
 
-        _loader = avango.gua.nodes.TriMeshLoader()
+        self._loader = avango.gua.nodes.TriMeshLoader()
 
-        self.ray_geometry = _loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
+        self.ray_geometry = self._loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
         self.ray_geometry.Transform.value = \
             avango.gua.make_trans_mat(0.0,0.0,self.ray_length * -0.5) * \
             avango.gua.make_rot_mat(-90.0,1,0,0) * \
@@ -111,7 +111,7 @@ class VooDoll(avango.script.Script):
         self.ray_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
 
 
-        self.intersection_geometry = _loader.create_geometry_from_file("intersection_geometry", "data/objects/sphere.obj", avango.gua.LoaderFlags.DEFAULTS)
+        self.intersection_geometry = self._loader.create_geometry_from_file("intersection_geometry", "data/objects/sphere.obj", avango.gua.LoaderFlags.DEFAULTS)
         self.intersection_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
 
         self.intersection_geometry.Tags.value = ["invisible"]
@@ -121,15 +121,23 @@ class VooDoll(avango.script.Script):
         ### set initial states ###
         self.enable(False)
 
+    def clone(self, node):
+        r_node = self._loader.create_geometry_from_file("cube", "data/objects/cube.obj", avango.gua.LoaderFlags.DEFAULTS)
+        return r_node
 
-    def clone(self, object):
-        return object
+    @staticmethod
+    def get_largest_expansion(node):
+        expansions = node.BoundingBox.value.Max.value - node.BoundingBox.value.Min.value
+        print(node.BoundingBox.value.Min.value)
+        print(node.BoundingBox.value.Max.value)
+        print(max(expansions.x, expansions.y, expansions.z))
+        return max(expansions.x, expansions.y, expansions.z)
 
-    def getDiameter(self, object):
-        return 1.0
-
-    def getRelative(self, object, target):
-        return avango.gua.make_trans_mat(0, 0, 0)
+    @staticmethod
+    def get_relative(node, reference):
+        n_mat = node.WorldTransform.value
+        r_mat = reference.WorldTransform.value
+        return avango.gua.make_inverse_mat(n_mat) * r_mat
 
     ### functions ###
     def enable(self, BOOL): # extend respective base-class function
