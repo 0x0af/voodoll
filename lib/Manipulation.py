@@ -95,7 +95,7 @@ class ManipulationManager(avango.script.Script):
             self.active_manipulation_technique = self.homer
 
         elif INT == 4: # VooDoll
-            print("switch to HOMER technique")
+            print("switch to VooDoll technique")
             self.active_manipulation_technique = self.voodoll
 
 
