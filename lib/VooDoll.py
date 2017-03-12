@@ -172,10 +172,25 @@ class VooDoll(avango.script.Script):
             self.pointer_node_1.Tags.value = ["invisible"]
             self.pointer_node_2.Tags.value = ["invisible"]
 
+    def set_intersection_point(self, pointer):
+        if pointer == VooDollPointer.POINTER_1:
+            elif pointer == VooDollPointerEnum
+
     ### callback functions ###
     def evaluate(self): # implement respective base-class function
         if self.enable_flag == False:
             return
+
+        self.calc_pick_result()
+
+        if self.state == VooDollState.DOLL_SELECTION:
+            if self.pick_result_1 is None:
+                self.intersection_geometry_1.Tags = ["invisible"]
+            else:
+                self.intersection_geometry_1.Transform.value = ["invisible"]
+        elif self.state == VooDollState.NEEDLE_SELECTION:
+            self.calc_pick_result()
+        elif self.state == VooDollState.MANIPULATION:
 
     @field_has_changed(sf_button_1)
     def sf_button_1_changed(self):
