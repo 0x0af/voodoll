@@ -171,8 +171,6 @@ class VooDoll(avango.script.Script):
         self.pointer_node_1.Children.value.append(self.ray_geometry_1)
         self.pointer_node_2.Children.value.append(self.ray_geometry_2)
 
-        print(self.ray_geometry_1.get_field_name(0))
-
         # endregion
 
         # region Intersections
@@ -190,9 +188,12 @@ class VooDoll(avango.script.Script):
         self.enable(False)
 
     def clone(self, node):
-        r_node = self._loader.create_geometry_from_file("cube", "data/objects/cube.obj",
+        _obj = self._loader.create_geometry_from_file(node.value.Name.value, VooDoll.extract_file_path(node),
                                                         avango.gua.LoaderFlags.DEFAULTS)
-        return r_node
+        _obj.Material.connect_from(node.value.Material)
+        _obj.Transform.value = avango.gua.make_rot_mat(node.value.WorldTransform.value.get_rotate())
+
+        return _obj
 
     @staticmethod
     def get_largest_expansion(node):
@@ -211,6 +212,12 @@ class VooDoll(avango.script.Script):
         _vec = avango.gua.Vec3(_vec.x, _vec.y, _vec.z)
         self.ray.Direction.value = _vec * self.ray_length
         return self.SCENEGRAPH.ray_test(self.ray, self.pick_options, self.white_list, self.black_list)
+
+    @staticmethod
+    def extract_file_path(node):
+        _str = node.value.Geometry.value
+
+        return _str.split("|")[1]
 
     @staticmethod
     def filter_pick_result(pick_result_candidate):
@@ -312,7 +319,7 @@ class VooDoll(avango.script.Script):
 
             if _doll_button is not None and _doll_button.value and self.doll_scale_start_dist is not None:
                 _scale = self.get_distance_to_head(self.get_doll_pointer_node().WorldTransform.value.get_translate())
-                self.doll.Transform.value = avango.gua.make_scale_mat(_scale * self.doll_scale_factor)
+                self.doll.Transform.value = avango.gua.make_rot_mat(self.doll.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.doll_scale_factor)
 
             if self.doll_pointer == VooDollPointer.POINTER_1:
                 self.set_intersection_point(VooDollPointer.POINTER_2)
@@ -329,7 +336,7 @@ class VooDoll(avango.script.Script):
 
             if _needle_button is not None and _needle_button.value and self.needle_scale_start_dist is not None:
                 _scale = self.get_distance_to_head(self.get_needle_pointer_node().WorldTransform.value.get_translate())
-                self.needle.Transform.value = avango.gua.make_scale_mat(_scale * self.needle_scale_factor)
+                self.needle.Transform.value = avango.gua.make_rot_mat(self.needle.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.needle_scale_factor)
 
     def get_distance_to_head(self, vec):
         _head = self.HEAD_NODE.WorldTransform.value.get_translate()
