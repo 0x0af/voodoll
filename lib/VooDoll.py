@@ -7,6 +7,7 @@ import avango.daemon
 from gi.overrides.keysyms import R
 from enum import Enum
 import copy
+import time
 
 
 class VooDollState(Enum):
@@ -29,6 +30,30 @@ class VooDoll(avango.script.Script):
 
         self.pointer_node_1 = None
         self.pointer_node_2 = None
+
+    def create_ray_geometry(self):
+        _ray = self._loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj",
+                                                      avango.gua.LoaderFlags.DEFAULTS)
+        _ray.Transform.value = \
+            avango.gua.make_trans_mat(0.0,0.0,self.ray_length * -0.5) * \
+            avango.gua.make_rot_mat(-90.0,1,0,0) * \
+            avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
+        _ray.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
+
+        return _ray
+
+    def create_intersection_geometry(self):
+        _inter = avango.gua.nodes.TransformNode(Name="intersection")
+
+        _point = self._loader.create_geometry_from_file("intersection_geometry", "data/objects/sphere.obj",
+                                               avango.gua.LoaderFlags.DEFAULTS)
+        _point.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
+        _point.Transform.value = avango.gua.make_scale_mat(self.intersection_point_size)
+
+        _inter.Children.value.append(_point)
+
+        return _inter
+
 
     def my_constructor(self,
         SCENEGRAPH = None,
@@ -84,7 +109,12 @@ class VooDoll(avango.script.Script):
 
         self.doll_pointer = VooDollPointer.POINTER_NONE
 
-        #region Pointer 1
+        self.doll_scale_start_dist = None
+        self.doll_scale_factor = None
+        self.needle_scale_start_dist = None
+        self.needle_scale_factor = None
+
+        #region Pointers
         self.pointer_tracking_sensor_1 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
         self.pointer_tracking_sensor_1.Station.value = POINTER_TRACKING_STATION_1
         self.pointer_tracking_sensor_1.TransmitterOffset.value = TRACKING_TRANSMITTER_OFFSET
@@ -99,9 +129,7 @@ class VooDoll(avango.script.Script):
         self.pointer_node_1.Tags.value = ["invisible"]
 
         NAVIGATION_NODE.Children.value.append(self.pointer_node_1)
-        #endregion
 
-        #region Pointer 2
         self.pointer_tracking_sensor_2 = avango.daemon.nodes.DeviceSensor(DeviceService=avango.daemon.DeviceService())
         self.pointer_tracking_sensor_2.Station.value = POINTER_TRACKING_STATION_2
         self.pointer_tracking_sensor_2.TransmitterOffset.value = TRACKING_TRANSMITTER_OFFSET
@@ -115,49 +143,45 @@ class VooDoll(avango.script.Script):
         self.pointer_node_2.Transform.connect_from(self.pointer_tracking_sensor_2.Matrix)
         self.pointer_node_2.Tags.value = ["invisible"]
 
+        self.object_slot_1 = avango.gua.nodes.TransformNode(Name="pointer_slot_1")
+        self.object_slot_2 = avango.gua.nodes.TransformNode(Name="pointer_slot_2")
+
+        self.object_slot_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, -0.1)
+        self.object_slot_2.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, -0.1)
+
+        self.pointer_node_1.Children.value.append(self.object_slot_1)
+        self.pointer_node_2.Children.value.append(self.object_slot_2)
+
         NAVIGATION_NODE.Children.value.append(self.pointer_node_2)
+
         #endregion
 
         self._loader = avango.gua.nodes.TriMeshLoader()
 
+        self.start_time_bp_1 = None
+        self.start_time_bp_2 = None
 
-        self.ray_geometry_1 = self._loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj", avango.gua.LoaderFlags.DEFAULTS)
-        self.ray_geometry_1.Transform.value = \
-            avango.gua.make_trans_mat(0.0,0.0,self.ray_length * -0.5) * \
-            avango.gua.make_rot_mat(-90.0,1,0,0) * \
-            avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
+        self.SCALING_TIME_THRESHHOLD = 1.0
 
-        self.ray_geometry_1.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
+        #region Rays
 
-        self.ray_geometry_2 = self._loader.create_geometry_from_file("ray_geometry", "data/objects/cylinder.obj",
-                                                                avango.gua.LoaderFlags.DEFAULTS)
-        self.ray_geometry_2.Transform.value = \
-            avango.gua.make_trans_mat(0.0, 0.0, self.ray_length * -0.5) * \
-            avango.gua.make_rot_mat(-90.0, 1, 0, 0) * \
-            avango.gua.make_scale_mat(self.ray_thickness, self.ray_length, self.ray_thickness)
-
-        self.ray_geometry_2.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 0.0, 1.0))
-
+        self.ray_geometry_1 = self.create_ray_geometry()
+        self.ray_geometry_2 = self.create_ray_geometry()
         self.pointer_node_1.Children.value.append(self.ray_geometry_1)
         self.pointer_node_2.Children.value.append(self.ray_geometry_2)
 
-        self.intersection_geometry_1 = self._loader.create_geometry_from_file("intersection_geometry",
-                                                                              "data/objects/sphere.obj",
-                                                                              avango.gua.LoaderFlags.DEFAULTS)
-        self.intersection_geometry_1.Material.value.set_uniform("Color", avango.gua.Vec4(1.0,0.0,0.0,1.0))
-        self.intersection_geometry_1.Transform.value *= avango.gua.make_scale_mat(self.intersection_point_size)
+        #endregion
 
-        self.intersection_geometry_2 = self._loader.create_geometry_from_file("intersection_geometry",
-                                                                              "data/objects/sphere.obj",
-                                                                              avango.gua.LoaderFlags.DEFAULTS)
-        self.intersection_geometry_2.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 0.0, 1.0))
-        self.intersection_geometry_2.Transform.value *= avango.gua.make_scale_mat(self.intersection_point_size)
+        #region Intersections
 
+        self.intersection_geometry_1 = self.create_intersection_geometry()
+        self.intersection_geometry_2 = self.create_intersection_geometry()
         self.intersection_geometry_1.Tags.value = ["invisible"]
         self.intersection_geometry_2.Tags.value = ["invisible"]
-
         SCENEGRAPH.Root.value.Children.value.append(self.intersection_geometry_1)
         SCENEGRAPH.Root.value.Children.value.append(self.intersection_geometry_2)
+
+        #endregion
 
         ### set initial states ###
         self.enable(False)
@@ -170,9 +194,6 @@ class VooDoll(avango.script.Script):
     @staticmethod
     def get_largest_expansion(node):
         expansions = node.BoundingBox.value.Max.value - node.BoundingBox.value.Min.value
-        print(node.BoundingBox.value.Min.value)
-        print(node.BoundingBox.value.Max.value)
-        print(max(expansions.x, expansions.y, expansions.z))
         return max(expansions.x, expansions.y, expansions.z)
 
     @staticmethod
@@ -237,9 +258,40 @@ class VooDoll(avango.script.Script):
             if _pick_result is None:
                 _intersection_geometry.Tags.value = ["invisible"]
             else:
-                _intersection_geometry.Transform.value = avango.gua.make_trans_mat(
-                    _pick_result.WorldPosition.value) * avango.gua.make_scale_mat(self.intersection_point_size)
+                _intersection_geometry.Transform.value = avango.gua.make_trans_mat(_pick_result.WorldPosition.value)
                 _intersection_geometry.Tags.value = []
+
+    def get_doll_button(self):
+        if self.doll_pointer == VooDollPointer.POINTER_1:
+            return self.sf_button_1
+        elif self.doll_pointer == VooDollPointer.POINTER_2:
+            return self.sf_button_2
+        else:
+            return None
+
+    def get_needle_button(self):
+        if self.doll_pointer == VooDollPointer.POINTER_1:
+            return self.sf_button_2
+        elif self.doll_pointer == VooDollPointer.POINTER_2:
+            return self.sf_button_1
+        else:
+            return None
+
+    def get_doll_pointer_node(self):
+        if self.doll_pointer == VooDollPointer.POINTER_1:
+            return self.pointer_node_1
+        elif self.doll_pointer == VooDollPointer.POINTER_2:
+            return self.pointer_node_2
+        else:
+            return None
+
+    def get_needle_pointer_node(self):
+        if self.doll_pointer == VooDollPointer.POINTER_1:
+            return self.pointer_node_2
+        elif self.doll_pointer == VooDollPointer.POINTER_2:
+            return self.pointer_node_1
+        else:
+            return None
 
     ### callback functions ###
     def evaluate(self): # implement respective base-class function
@@ -252,6 +304,12 @@ class VooDoll(avango.script.Script):
             self.set_intersection_point(VooDollPointer.POINTER_1)
             self.set_intersection_point(VooDollPointer.POINTER_2)
         elif self.state == VooDollState.NEEDLE_SELECTION:
+            _doll_button = self.get_doll_button()
+
+            if _doll_button is not None and _doll_button.value and self.doll_scale_start_dist is not None:
+                _scale = self.get_distance_to_head(self.get_doll_pointer_node().WorldTransform.value.get_translate())
+                self.doll.Transform.value = avango.gua.make_scale_mat(_scale * self.doll_scale_factor)
+
             if self.doll_pointer == VooDollPointer.POINTER_1:
                 self.set_intersection_point(VooDollPointer.POINTER_2)
             else:
@@ -261,8 +319,21 @@ class VooDoll(avango.script.Script):
             _parent_mat = self.needle_ref.value.Parent.value.WorldTransform.value
             self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(_parent_mat) *self.doll_ref.value.WorldTransform.value * _rel_mat
 
+            _needle_button = self.get_needle_button()
 
-    def click_handler_button(self, button, pick_result, pointer_node, ray, intersection_geometry):
+            if _needle_button is not None and _needle_button.value and self.needle_scale_start_dist is not None:
+                _scale = self.get_distance_to_head(self.get_needle_pointer_node().WorldTransform.value.get_translate())
+                self.needle.Transform.value = avango.gua.make_scale_mat(_scale * self.needle_scale_factor)
+
+    def get_distance_to_head(self, vec):
+        _head = self.HEAD_NODE.WorldTransform.value.get_translate()
+        _head.y = 0
+
+        _vec = avango.gua.Vec3(vec.x, 0, vec.z)
+
+        return _head.distance_to(_vec)
+
+    def click_handler_button(self, button, pick_result, pointer_node, object_slot, ray, intersection_geometry):
         if button.value:
             if pick_result is not None:
                 _obj = None
@@ -270,42 +341,45 @@ class VooDoll(avango.script.Script):
                 if self.state == VooDollState.DOLL_SELECTION:
                     self.doll_ref = pick_result.Object
                     _obj = self.doll = self.clone(self.doll_ref)
-                    print("doll")
+                    self.doll_scale_start_dist = self.get_distance_to_head(pointer_node.WorldTransform.value.get_translate())
+                    self.doll_scale_factor = (1 / self.get_largest_expansion(self.doll)) * 0.1
+                    self.state = VooDollState.NEEDLE_SELECTION
                 elif self.state == VooDollState.NEEDLE_SELECTION:
                     self.needle_ref = pick_result.Object
                     _obj = self.needle = self.clone(self.needle_ref)
-                    print("needle")
+                    self.needle_scale_start_dist = self.get_distance_to_head(pointer_node.WorldTransform.value.get_translate())
+                    self.needle_scale_factor = (1 / self.get_largest_expansion(self.needle)) * 0.1
+                    self.state = VooDollState.MANIPULATION
 
-                _obj.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, -0.1) * avango.gua.make_scale_mat(0.1)
+                _obj.Transform.value = avango.gua.make_scale_mat(0.1)
 
                 # TODO: scale and respect orientation
                 ray.Tags.value = ["invisible"]
-                pointer_node.Children.value.append(_obj)
+                intersection_geometry.Tags.value = ["invisible"]
+                object_slot.Children.value.append(_obj)
         else:
-            intersection_geometry.Tags.value = ["invisible"]
-
-            if self.state == VooDollState.DOLL_SELECTION:
-                self.state = VooDollState.NEEDLE_SELECTION
-            elif self.state == VooDollState.NEEDLE_SELECTION:
-                self.state = VooDollState.MANIPULATION
+            if self.state == VooDollState.NEEDLE_SELECTION:
+                self.doll_scale_start_dist = None
+            elif self.state == VooDollState.MANIPULATION:
+                self.needle_scale_start_dist = None
 
     def click_handler(self, pointer):
         if self.state == VooDollState.DOLL_SELECTION:
             if pointer == VooDollPointer.POINTER_1:
-                self.click_handler_button(self.sf_button_1, self.pick_result_1, self.pointer_node_1,
+                self.click_handler_button(self.sf_button_1, self.pick_result_1, self.pointer_node_1, self.object_slot_1,
                                           self.ray_geometry_1, self.intersection_geometry_1)
             elif pointer == VooDollPointer.POINTER_2:
-                self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2,
+                self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2, self.object_slot_2,
                                           self.ray_geometry_2, self. intersection_geometry_2)
 
             self.doll_pointer = pointer
         elif self.state == VooDollState.NEEDLE_SELECTION:
             if pointer != self.doll_pointer:
                 if pointer == VooDollPointer.POINTER_1:
-                    self.click_handler_button(self.sf_button_1, self.pick_result_1, self.pointer_node_1,
+                    self.click_handler_button(self.sf_button_1, self.pick_result_1, self.pointer_node_1, self.object_slot_1,
                                               self.ray_geometry_1, self.intersection_geometry_1)
                 elif pointer == VooDollPointer.POINTER_2:
-                    self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2,
+                    self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2, self.object_slot_2,
                                               self.ray_geometry_2, self. intersection_geometry_2)
         elif self.state == VooDollState.MANIPULATION:
             if pointer != self.doll_pointer and (self.sf_button_1.value or self.sf_button_2.value):
@@ -323,9 +397,19 @@ class VooDoll(avango.script.Script):
     @field_has_changed(sf_button_1)
     def sf_button_1_changed(self):
         if self.pointer_node_1 is not None:
+            if self.sf_button_1.value:
+                self.start_time_bp_1 = time.time()
+            else:
+                self.start_time_bp_1 = None
+
             self.click_handler(VooDollPointer.POINTER_1)
 
     @field_has_changed(sf_button_2)
     def sf_button_2_changed(self):
         if self.pointer_node_2 is not None:
+            if self.sf_button_2.value:
+                self.start_time_bp_2 = time.time()
+            else:
+                self.start_time_bp_2 = None
+
             self.click_handler(VooDollPointer.POINTER_2)
