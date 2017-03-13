@@ -8,7 +8,7 @@ from gi.overrides.keysyms import R
 from enum import Enum
 import copy
 import time
-
+import inspect
 
 class VooDollState(Enum):
     DOLL_SELECTION = 1
@@ -171,6 +171,8 @@ class VooDoll(avango.script.Script):
         self.pointer_node_1.Children.value.append(self.ray_geometry_1)
         self.pointer_node_2.Children.value.append(self.ray_geometry_2)
 
+        print(self.ray_geometry_1.get_field_name(0))
+
         # endregion
 
         # region Intersections
@@ -318,10 +320,12 @@ class VooDoll(avango.script.Script):
             else:
                 self.set_intersection_point(VooDollPointer.POINTER_1)
         elif self.state == VooDollState.MANIPULATION:
-            _rel_mat = self.get_relative(self.doll, self.needle)
+            _rel_mat = avango.gua.make_inverse_mat(self.doll.WorldTransform.value) * self.needle.WorldTransform.value
+
             _parent_mat = self.needle_ref.value.Parent.value.WorldTransform.value
+
             self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(
-                _parent_mat) * self.doll_ref.value.WorldTransform.value #* _rel_mat
+                _parent_mat) * self.doll_ref.value.WorldTransform.value * _rel_mat
 
             _needle_button = self.get_needle_button()
 
@@ -354,7 +358,7 @@ class VooDoll(avango.script.Script):
                     _obj = self.needle = self.clone(self.needle_ref)
                     self.needle_scale_start_dist = self.get_distance_to_head(
                         pointer_node.WorldTransform.value.get_translate())
-                    self.needle_scale_factor = (1 / self.get_largest_expansion(self.needle)) * 0.1
+                    self.needle_scale_factor = (self.get_largest_expansion(self.needle)) * 0.1
                     self.state = VooDollState.MANIPULATION
 
                 _obj.Transform.value = avango.gua.make_scale_mat(0.1)
@@ -392,25 +396,35 @@ class VooDoll(avango.script.Script):
         elif self.state == VooDollState.MANIPULATION:
             if pointer != self.doll_pointer and self.get_needle_button().value:
                 self.state = VooDollState.NEEDLE_SELECTION
+
                 if self.doll_pointer == VooDollPointer.POINTER_1:
                     self.object_slot_2.Children.value.remove(self.needle)
+                    self.ray_geometry_2.Tags.value = []
                 elif self.doll_pointer == VooDollPointer.POINTER_2:
                     self.object_slot_1.Children.value.remove(self.needle)
+                    self.ray_geometry_1.Tags.value = []
+
                 self.needle = None
                 self.needle_ref = None
-            else:
+
+            elif pointer == self.doll_pointer and self.get_doll_button().value:
                 self.state = VooDollState.DOLL_SELECTION
+
                 if self.doll_pointer == VooDollPointer.POINTER_1:
                     self.object_slot_1.Children.value.remove(self.doll)
                     self.object_slot_2.Children.value.remove(self.needle)
                 elif self.doll_pointer == VooDollPointer.POINTER_2:
                     self.object_slot_1.Children.value.remove(self.needle)
                     self.object_slot_2.Children.value.remove(self.doll)
+
                 self.doll_pointer = None
                 self.doll = None
                 self.needle = None
                 self.doll_ref = None
                 self.needle_ref = None
+
+                self.ray_geometry_1.Tags.value = []
+                self.ray_geometry_2.Tags.value = []
 
     @field_has_changed(sf_button_1)
     def sf_button_1_changed(self):
