@@ -257,7 +257,10 @@ class VooDoll(avango.script.Script):
             else:
                 self.set_intersection_point(VooDollPointer.POINTER_1)
         elif self.state == VooDollState.MANIPULATION:
-            pass
+            _rel_mat = self.get_relative(self.doll,self.needle)
+            _parent_mat = self.needle_ref.value.Parent.value.WorldTransform.value
+            self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(_parent_mat) *self.doll_ref.value.WorldTransform.value * _rel_mat
+
 
     def click_handler_button(self, button, pick_result, pointer_node, ray, intersection_geometry):
         if button.value:
@@ -305,7 +308,17 @@ class VooDoll(avango.script.Script):
                     self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2,
                                               self.ray_geometry_2, self. intersection_geometry_2)
         elif self.state == VooDollState.MANIPULATION:
-            pass
+            if pointer != self.doll_pointer and (self.sf_button_1.value or self.sf_button_2.value):
+                self.state = VooDollState.NEEDLE_SELECTION
+                self.needle = None
+                self.needle_ref = None
+            else:
+                self.state = VooDollState.DOLL_SELECTION
+                self.doll_pointer = None
+                self.doll = None
+                self.needle = None
+                self.doll_ref = None
+                self.needle_ref = None
 
     @field_has_changed(sf_button_1)
     def sf_button_1_changed(self):
