@@ -398,7 +398,7 @@ class VooDoll(avango.script.Script):
                     self.doll_ref.value.Children.value.append(self.doll_ref_axis)
                     _obj = self.doll = self.clone(self.doll_ref.value)
                     self.doll.Children.value.append(self.doll_axis)
-                    self.doll.Transform.value = avango.gua.make_scale_mat(1.0)
+                    self.doll.Transform.value = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * avango.gua.make_rot_mat(self.doll_ref.value.WorldTransform.value.get_rotate())
                     self.doll_scale_start_dist = self.get_distance_to_head(
                         pointer_node.WorldTransform.value.get_translate())
                     self.doll_scale_factor = (1 / self.get_largest_expansion(self.doll)) * 0.1
