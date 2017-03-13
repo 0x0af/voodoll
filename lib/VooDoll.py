@@ -190,7 +190,6 @@ class VooDoll(avango.script.Script):
     def clone(self, node):
         r_node = self._loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS)
-
         return r_node
 
     @staticmethod
@@ -318,8 +317,7 @@ class VooDoll(avango.script.Script):
         elif self.state == VooDollState.MANIPULATION:
             _rel_mat = self.get_relative(self.doll, self.needle)
             _parent_mat = self.needle_ref.value.Parent.value.WorldTransform.value
-            self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(
-                _parent_mat) * self.doll_ref.value.WorldTransform.value #* _rel_mat
+            self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(_parent_mat) * self.doll_ref.value.WorldTransform.value #* _rel_mat
 
             _needle_button = self.get_needle_button()
 
