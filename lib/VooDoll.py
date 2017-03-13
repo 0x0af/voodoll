@@ -239,6 +239,8 @@ class VooDoll(avango.script.Script):
         if BOOL:
             self.pointer_node_1.Tags.value = []
             self.pointer_node_2.Tags.value = []
+            self.ray_geometry_1.Tags.value = []
+            self.ray_geometry_2.Tags.value = []
         else:
             self.pointer_node_1.Tags.value = ["invisible"]
             self.pointer_node_2.Tags.value = ["invisible"]
