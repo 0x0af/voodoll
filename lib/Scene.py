@@ -83,6 +83,8 @@ class Scene:
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.cube_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.4, 0.0) * \
                                       avango.gua.make_scale_mat(0.1, 0.1, 0.1)
+        self.cube_1.Material.value.set_uniform("Emissivity", 0.5)
+        self.cube_1.Material.value.set_uniform("Metalness", 0.1)
         self.cube_1.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 0.0, 1.0))
         PARENT_NODE.Children.value.append(self.cube_1)
 
@@ -91,6 +93,8 @@ class Scene:
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.cube_2.Transform.value = avango.gua.make_trans_mat(-0.2, 0.4, 0.0) * \
                                       avango.gua.make_scale_mat(0.2, 0.2, 0.2)
+        self.cube_2.Material.value.set_uniform("Emissivity", 0.5)
+        self.cube_2.Material.value.set_uniform("Metalness", 0.1)
         self.cube_2.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 1.0, 0.0, 1.0))
         PARENT_NODE.Children.value.append(self.cube_2)
 
@@ -99,6 +103,8 @@ class Scene:
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.sphere.Transform.value = avango.gua.make_trans_mat(0.2, 0.2, 0.0) * \
                                       avango.gua.make_scale_mat(0.1, 0.1, 0.1)
+        self.sphere.Material.value.set_uniform("Emissivity", 0.5)
+        self.sphere.Material.value.set_uniform("Metalness", 0.1)
         self.sphere.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 0.0, 1.0, 1.0))
         PARENT_NODE.Children.value.append(self.sphere)
 
@@ -106,7 +112,7 @@ class Scene:
         self.ground = _loader.create_geometry_from_file("ground", "data/objects/cube.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS)
         self.ground.Transform.value = avango.gua.make_trans_mat(0.0,-0.17,0.0) * \
             avango.gua.make_scale_mat(1.0,0.005,1.0)
-        self.ground.Material.value.set_uniform("Color", avango.gua.Vec4(0.7,0.7,1.0,1.0))
+        self.ground.Material.value.set_uniform("Color", avango.gua.Vec4(0.7,0.7,1.0, 1.0))
         self.ground.Material.value.set_uniform("Emissivity", 0.5)
         self.ground.Material.value.set_uniform("Metalness", 0.1)
         self.ground.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.ground.Transform.value)
