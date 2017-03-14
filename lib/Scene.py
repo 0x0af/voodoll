@@ -92,7 +92,8 @@ class Scene:
         self.cube_2 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.cube_2.Transform.value = avango.gua.make_trans_mat(-0.2, 0.4, 0.0) * \
-                                      avango.gua.make_scale_mat(0.2, 0.2, 0.2)
+                                      avango.gua.make_scale_mat(0.2, 0.2, 0.2) * \
+                                      avango.gua.make_rot_mat(45, 0, 1, 0)
         self.cube_2.Material.value.set_uniform("Emissivity", 0.5)
         self.cube_2.Material.value.set_uniform("Metalness", 0.1)
         self.cube_2.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 1.0, 0.0, 1.0))

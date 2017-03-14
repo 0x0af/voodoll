@@ -429,7 +429,7 @@ class VooDoll(avango.script.Script):
                 if self.state == VooDollState.DOLL_SELECTION:
                     self.doll_ref = pick_result.Object.value
                     #self.doll_ref.value.Material.value.set_uniform("Opacity", 0.2)
-                    self.doll_ref_axis.Transform.value = avango.gua.make_inverse_mat(self.doll_ref.WorldTransform.value)
+                    self.doll_ref_axis.Transform.value = avango.gua.make_inverse_mat(self.doll_ref.WorldTransform.value) * avango.gua.make_trans_mat(self.doll_ref.WorldTransform.value.get_translate()) * avango.gua.make_rot_mat(self.doll_ref.WorldTransform.value.get_rotate())
                     self.doll_ref.Children.value.append(self.doll_ref_axis)
                     _obj = self.doll = self.clone(self.doll_ref)
                     self.doll.Children.value.append(self.doll_axis)
