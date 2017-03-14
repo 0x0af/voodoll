@@ -22,6 +22,9 @@ class VooDollPointer(Enum):
 class VooDoll(avango.script.Script):
     sf_button_1 = avango.SFBool()
     sf_button_2 = avango.SFBool()
+    sf_doll_ref_coord_mat = avango.gua.SFMatrix4()
+    sf_pointer_mat_1 = avango.gua.SFMatrix4()
+    sf_pointer_mat_2 = avango.gua.SFMatrix4()
 
     @staticmethod
     def get_largest_expansion(node):
@@ -99,13 +102,13 @@ class VooDoll(avango.script.Script):
         _y.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 1.0, 0.0, 1.0))
         _z.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 1.0, 1.0))
         _y.Transform.value = \
-            avango.gua.make_scale_mat(self.ray_thickness, 1.0, self.ray_thickness)
+            avango.gua.make_scale_mat(self.ray_thickness, 5.0, self.ray_thickness)
         _x.Transform.value = \
             avango.gua.make_rot_mat(-90.0, 0, 0, 1) * \
-            avango.gua.make_scale_mat(self.ray_thickness, 1.0, self.ray_thickness)
+            avango.gua.make_scale_mat(self.ray_thickness, 5.0, self.ray_thickness)
         _z.Transform.value = \
             avango.gua.make_rot_mat(-90.0, 1, 0, 0) * \
-            avango.gua.make_scale_mat(self.ray_thickness, 1.0, self.ray_thickness)
+            avango.gua.make_scale_mat(self.ray_thickness, 5.0, self.ray_thickness)
         _trans.Children.value.append(_x)
         _trans.Children.value.append(_y)
         _trans.Children.value.append(_z)
@@ -187,7 +190,7 @@ class VooDoll(avango.script.Script):
         self.sf_button_1.connect_from(self.pointer_device_sensor_1.Button0)
 
         self.pointer_node_1 = avango.gua.nodes.TransformNode(Name="pointer_node_1")
-        self.pointer_node_1.Transform.connect_from(self.pointer_tracking_sensor_1.Matrix)
+        self.sf_pointer_mat_1.connect_from(self.pointer_tracking_sensor_1.Matrix)
         self.pointer_node_1.Tags.value = ["invisible"]
 
         NAVIGATION_NODE.Children.value.append(self.pointer_node_1)
@@ -202,7 +205,7 @@ class VooDoll(avango.script.Script):
         self.sf_button_2.connect_from(self.pointer_device_sensor_2.Button0)
 
         self.pointer_node_2 = avango.gua.nodes.TransformNode(Name="pointer_node_2")
-        self.pointer_node_2.Transform.connect_from(self.pointer_tracking_sensor_2.Matrix)
+        self.sf_pointer_mat_2.connect_from(self.pointer_tracking_sensor_2.Matrix)
         self.pointer_node_2.Tags.value = ["invisible"]
 
         self.object_slot_1 = avango.gua.nodes.TransformNode(Name="pointer_slot_1")
@@ -236,8 +239,10 @@ class VooDoll(avango.script.Script):
 
         self.doll_ref_axis = self.create_axis_node()
         self.doll_axis = self.create_axis_node()
+        self.doll_ref_axis.Tags.value = ["invisible"]
+        self.doll_axis.Tags.value = ["invisible"]
 
-        self.doll_axis.Transform.connect_from(self.doll_ref_axis.Transform)
+        SCENEGRAPH.Root.value.Children.value.append(self.doll_ref_axis)
 
         # region Intersections
 
@@ -252,6 +257,10 @@ class VooDoll(avango.script.Script):
 
         ### set initial states ###
         self.enable(False)
+
+    def get_normalised_rot(self, mat):
+        return avango.gua.make_inverse_mat(avango.gua.make_trans_mat(mat.get_translate())) * mat
+
 
     def clone(self, node):
         """
@@ -393,7 +402,7 @@ class VooDoll(avango.script.Script):
         elif self.state == VooDollState.NEEDLE_SELECTION:
             _doll_button = self.get_doll_button()
 
-            if _doll_button is not None and _doll_button.value and self.doll_scale_start_dist is not None and \
+            if False and _doll_button is not None and _doll_button.value and self.doll_scale_start_dist is not None and \
                     self.has_timed_out(self.get_doll_button_timer(), self.SCALING_TIME_THRESHHOLD):
                 _scale = self.get_distance_to_head(self.get_doll_pointer_node().WorldTransform.value.get_translate())
                 self.doll.Transform.value = avango.gua.make_rot_mat(self.doll.Transform.value.get_rotate()) * avango.gua.make_scale_mat(self.doll_scale_factor * _scale)
@@ -429,10 +438,18 @@ class VooDoll(avango.script.Script):
                 if self.state == VooDollState.DOLL_SELECTION:
                     self.doll_ref = pick_result.Object.value
                     #self.doll_ref.value.Material.value.set_uniform("Opacity", 0.2)
-                    self.doll_ref_axis.Transform.value = avango.gua.make_identity_mat()
-                    self.doll_ref.Children.value.append(self.doll_ref_axis)
+                    self.sf_doll_ref_coord_mat.connect_from(self.doll_ref.WorldTransform)
+                    self.doll_ref_axis.Tags.value = []
+                    self.doll_axis.Tags.value = []
                     _obj = self.doll = self.clone(self.doll_ref)
-                    self.doll.Children.value.append(self.doll_axis)
+
+                    _trans_mat = avango.gua.make_inverse_mat(_obj.WorldTransform.value) * object_slot.WorldTransform.value
+                    _trans_mat = avango.gua.make_trans_mat(_trans_mat.get_translate())
+
+                    _obj.Transform.value = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * _obj.WorldTransform.value * _trans_mat * avango.gua.make_scale_mat(0.3)
+                    self.doll_axis.Transform.value = self.get_normalised_rot(_obj.Transform.value)
+
+                    object_slot.Children.value.append(self.doll_axis)
                     self.doll_scale_start_dist = self.get_distance_to_head(
                         pointer_node.WorldTransform.value.get_translate())
                     _factor = (1 / self.get_largest_expansion(self.doll)) * 0.1
@@ -447,8 +464,6 @@ class VooDoll(avango.script.Script):
                     self.needle_scale_factor = (1 / self.get_largest_expansion(self.needle)) * _mat.get_scale()
                     self.state = VooDollState.MANIPULATION
 
-                _obj.Transform.value = avango.gua.make_scale_mat(0.1)
-
                 ray.Tags.value = ["invisible"]
                 intersection_geometry.Tags.value = ["invisible"]
                 object_slot.Children.value.append(_obj)
@@ -461,9 +476,6 @@ class VooDoll(avango.script.Script):
                 self.needle_scale_factor = None
 
     def reset(self):
-        if self.doll_ref_axis.Parent.value is not None:
-            self.doll_ref_axis.Parent.value.Children.value.remove(self.doll_ref_axis)
-
         if self.doll_axis.Parent.value is not None:
             self.doll_axis.Parent.value.Children.value.remove(self.doll_axis)
 
@@ -482,6 +494,9 @@ class VooDoll(avango.script.Script):
 
         self.ray_geometry_1.Tags.value = []
         self.ray_geometry_2.Tags.value = []
+        self.doll_ref_axis.Tags.value = ["invisible"]
+        self.doll_axis.Tags.value = ["invisible"]
+
 
         self.start_time_bp_1 = None
         self.start_time_bp_2 = None
@@ -550,3 +565,27 @@ class VooDoll(avango.script.Script):
                 self.start_time_bp_2 = None
 
             self.click_handler(VooDollPointer.POINTER_2)
+
+    @field_has_changed(sf_doll_ref_coord_mat)
+    def sf_doll_ref_coord_mat_changed(self):
+        if self.doll_ref_axis is not None:
+            _mat = self.sf_doll_ref_coord_mat.value
+
+            self.doll_ref_axis.Transform.value = \
+                avango.gua.make_inverse_mat(self.doll_ref_axis.Parent.value.WorldTransform.value) * \
+                avango.gua.make_trans_mat(_mat.get_translate()) * \
+                self.get_normalised_rot(_mat)
+
+    @field_has_changed(sf_pointer_mat_1)
+    def sf_pointer_mat_1_changed(self):
+        if self.pointer_node_1 is not None:
+            _mat = self.sf_pointer_mat_1.value
+
+            self.pointer_node_1.Transform.value = avango.gua.make_trans_mat(_mat.get_translate()) * avango.gua.make_rot_mat(_mat.get_rotate())
+
+    @field_has_changed(sf_pointer_mat_2)
+    def sf_pointer_mat_2_changed(self):
+        if self.pointer_node_2 is not None:
+            _mat = self.sf_pointer_mat_2.value
+
+            self.pointer_node_2.Transform.value = avango.gua.make_trans_mat(_mat.get_translate()) * self.get_normalised_rot(_mat)

@@ -70,7 +70,7 @@ class Scene:
         self.scene_light.ShadowNearClippingInSunDirection.value = 0.1 * (1.0/4.0)
         self.scene_light.ShadowMaxDistance.value = 10.0 # maximal distance, the shadow is visible
         self.scene_light.ShadowNearClippingInSunDirection.value = 0.05
-        self.scene_light.Transform.value = avango.gua.make_trans_mat(0.0,4,0.5) * \
+        self.scene_light.Transform.value = avango.gua.make_trans_mat(0.0,2,0.5) * \
             avango.gua.make_rot_mat(80.0,-1,0,0) * \
             avango.gua.make_scale_mat(3.0)
         PARENT_NODE.Children.value.append(self.scene_light)
