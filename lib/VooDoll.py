@@ -147,7 +147,11 @@ class VooDoll(avango.script.Script):
         self.object_slot_1 = avango.gua.nodes.TransformNode(Name="pointer_slot_1")
         self.object_slot_2 = avango.gua.nodes.TransformNode(Name="pointer_slot_2")
 
-        self.object_slot_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, -0.1)
+        _mat_1 = avango.gua.make_inverse_mat(avango.gua.make_scale_mat(self.object_slot_1.WorldTransform.value.get_scale()))
+        _mat_2 = avango.gua.make_inverse_mat(avango.gua.make_scale_mat(self.object_slot_2.WorldTransform.value.get_scale()))
+
+
+        self.object_slot_1.Transform.value = _mat_1 * avango.gua.make_trans_mat(0.0, 0.0, -0.1)
         self.object_slot_2.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, -0.1)
 
         self.pointer_node_1.Children.value.append(self.object_slot_1)
@@ -191,8 +195,6 @@ class VooDoll(avango.script.Script):
         _obj = self._loader.create_geometry_from_file(node.value.Name.value, VooDoll.extract_file_path(node),
                                                         avango.gua.LoaderFlags.DEFAULTS)
         _obj.Material.connect_from(node.value.Material)
-        _obj.Transform.value = avango.gua.make_rot_mat(node.value.WorldTransform.value.get_rotate())
-
         return _obj
 
     @staticmethod
@@ -319,7 +321,7 @@ class VooDoll(avango.script.Script):
 
             if _doll_button is not None and _doll_button.value and self.doll_scale_start_dist is not None:
                 _scale = self.get_distance_to_head(self.get_doll_pointer_node().WorldTransform.value.get_translate())
-                self.doll.Transform.value = avango.gua.make_rot_mat(self.doll.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.doll_scale_factor)
+                # self.doll.Transform.value = avango.gua.make_rot_mat(self.doll.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.doll_scale_factor)
 
             if self.doll_pointer == VooDollPointer.POINTER_1:
                 self.set_intersection_point(VooDollPointer.POINTER_2)
@@ -327,16 +329,14 @@ class VooDoll(avango.script.Script):
                 self.set_intersection_point(VooDollPointer.POINTER_1)
         elif self.state == VooDollState.MANIPULATION:
             _rel_mat = avango.gua.make_inverse_mat(self.doll.WorldTransform.value) * self.needle.WorldTransform.value
-
             _parent_mat = self.needle_ref.value.Parent.value.WorldTransform.value
-            self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(
-                _parent_mat) * self.doll_ref.value.WorldTransform.value * _rel_mat
+            self.needle_ref.value.Transform.value = avango.gua.make_inverse_mat(_parent_mat) * self.doll_ref.value.WorldTransform.value * _rel_mat
 
             _needle_button = self.get_needle_button()
 
             if _needle_button is not None and _needle_button.value and self.needle_scale_start_dist is not None:
                 _scale = self.get_distance_to_head(self.get_needle_pointer_node().WorldTransform.value.get_translate())
-                self.needle.Transform.value = avango.gua.make_rot_mat(self.needle.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.needle_scale_factor)
+                # self.needle.Transform.value = avango.gua.make_rot_mat(self.needle.Transform.value.get_rotate()) * avango.gua.make_scale_mat(_scale * self.needle_scale_factor)
 
     def get_distance_to_head(self, vec):
         _head = self.HEAD_NODE.WorldTransform.value.get_translate()
@@ -348,27 +348,35 @@ class VooDoll(avango.script.Script):
 
     def click_handler_button(self, button, pick_result, pointer_node, object_slot, ray, intersection_geometry):
         if button.value:
-            if pick_result is not None:
+            if pick_result is not None and self.state != VooDollState.MANIPULATION:
                 _obj = None
+                _scale = None
 
                 if self.state == VooDollState.DOLL_SELECTION:
                     self.doll_ref = pick_result.Object
                     _obj = self.doll = self.clone(self.doll_ref)
-                    self.doll_scale_start_dist = self.get_distance_to_head(
-                        pointer_node.WorldTransform.value.get_translate())
+                    self.doll_scale_start_dist = self.get_distance_to_head(pointer_node.WorldTransform.value.get_translate())
                     self.doll_scale_factor = (1 / self.get_largest_expansion(self.doll)) * 0.1
+                    _scale = self.get_distance_to_head(self.get_doll_pointer_node().WorldTransform.value.get_translate()) * self.doll_scale_factor
                     self.state = VooDollState.NEEDLE_SELECTION
                 elif self.state == VooDollState.NEEDLE_SELECTION:
                     self.needle_ref = pick_result.Object
                     _obj = self.needle = self.clone(self.needle_ref)
-                    self.needle_scale_start_dist = self.get_distance_to_head(
-                        pointer_node.WorldTransform.value.get_translate())
-                    self.needle_scale_factor = (self.get_largest_expansion(self.needle)) * 0.1
+                    self.needle_scale_start_dist = self.get_distance_to_head(pointer_node.WorldTransform.value.get_translate())
+                    self.needle_scale_factor = (1 / self.get_largest_expansion(self.needle)) * 0.1
+                    _scale = self.get_distance_to_head(self.get_needle_pointer_node().WorldTransform.value.get_translate()) * self.needle_scale_factor
                     self.state = VooDollState.MANIPULATION
 
-                _obj.Transform.value = avango.gua.make_scale_mat(0.1)
+                _from_to = self.doll_ref.value.WorldTransform.value.get_translate() - object_slot.WorldTransform.value.get_translate()
+                _push_pointer = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * avango.gua.make_trans_mat(_from_to)
+                _mat = object_slot.WorldTransform.value  * _push_pointer
+                _final = avango.gua.make_inverse_mat(_mat) * self.doll_ref.value.WorldTransform.value
+                _obj.Transform.value = avango.gua.make_rot_mat(_final.get_rotate()) * avango.gua.make_scale_mat(_scale)
 
-                # TODO: initial orientation
+                # TODO: rotation matrix strategy
+                # _rot_mat = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * self.doll_ref.value.WorldTransform.value
+                # _obj.Transform.value = avango.gua.make_rot_mat(_rot_mat.get_rotate())
+
                 ray.Tags.value = ["invisible"]
                 intersection_geometry.Tags.value = ["invisible"]
                 object_slot.Children.value.append(_obj)
@@ -380,14 +388,13 @@ class VooDoll(avango.script.Script):
 
     def click_handler(self, pointer):
         if self.state == VooDollState.DOLL_SELECTION:
+            self.doll_pointer = pointer
             if pointer == VooDollPointer.POINTER_1:
                 self.click_handler_button(self.sf_button_1, self.pick_result_1, self.pointer_node_1, self.object_slot_1,
                                           self.ray_geometry_1, self.intersection_geometry_1)
             elif pointer == VooDollPointer.POINTER_2:
                 self.click_handler_button(self.sf_button_2, self.pick_result_2, self.pointer_node_2, self.object_slot_2,
                                           self.ray_geometry_2, self.intersection_geometry_2)
-
-            self.doll_pointer = pointer
         elif self.state == VooDollState.NEEDLE_SELECTION:
             if pointer != self.doll_pointer:
                 if pointer == VooDollPointer.POINTER_1:
