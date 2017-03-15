@@ -396,7 +396,7 @@ class VirtualHand(ManipulationTechnique):
         self.hand_geometry.Tags.value = []
 
         _mf_pick_result = self.calc_pick_result(PICK_MAT=self.hand_geometry.WorldTransform.value,
-                                                PICK_LENGTH=self.hand_size)
+                                                PICK_LENGTH=self.hand_size*4)
 
         if len(_mf_pick_result.value) > 0:
             self.pick_result = _mf_pick_result.value[0]
@@ -486,7 +486,7 @@ class GoGo(ManipulationTechnique):
             self.pointer_node.Transform.value = self.pointer_tracking_sensor.Matrix.value
 
         _mf_pick_result = self.calc_pick_result(PICK_MAT=self.hand_geometry.WorldTransform.value,
-                                                PICK_LENGTH=self.hand_size)
+                                                PICK_LENGTH=self.hand_size * 4)
 
         if len(_mf_pick_result.value) > 0:
             self.pick_result = _mf_pick_result.value[0]

@@ -99,7 +99,7 @@ class Scene():
         self.cube_1_wrapper = avango.gua.nodes.TransformNode(Name="Cube_1")
         self.cube_1 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.cube_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.55, 0.0) * \
+        self.cube_1_wrapper.Transform.value = avango.gua.make_trans_mat(0.0, 0.55, 0.0) * \
                                       avango.gua.make_scale_mat(0.1, 0.1, 0.1)
         self.cube_1.Material.value.set_uniform("Emissivity", 0.5)
         self.cube_1.Material.value.set_uniform("Metalness", 0.01)
@@ -110,28 +110,32 @@ class Scene():
         PARENT_NODE.Children.value.append(self.cube_1_wrapper)
 
         # cube 2
+        self.cube_2_wrapper = avango.gua.nodes.TransformNode(Name="Cube_2")
         self.cube_2 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.cube_2.Transform.value = avango.gua.make_trans_mat(0.0, 0.4, 0.0) * \
+        self.cube_2_wrapper.Transform.value = avango.gua.make_trans_mat(0.0, 0.4, 0.0) * \
                                       avango.gua.make_scale_mat(0.2, 0.2, 0.2)
         self.cube_2.Material.value.set_uniform("Emissivity", 0.5)
         self.cube_2.Material.value.set_uniform("Metalness", 0.01)
         self.cube_2.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_2.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
         self.cube_2.Tags.value.append("complete_object")
-        PARENT_NODE.Children.value.append(self.cube_2)
+        self.cube_2_wrapper.Children.value.append(self.cube_2)
+        PARENT_NODE.Children.value.append(self.cube_2_wrapper)
 
         # cube 3
+        self.cube_3_wrapper = avango.gua.nodes.TransformNode(Name="Cube_3")
         self.cube_3 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.cube_3.Transform.value = avango.gua.make_trans_mat(0.0, 0.15, 0.0) * \
+        self.cube_3_wrapper.Transform.value = avango.gua.make_trans_mat(0.0, 0.15, 0.0) * \
                                       avango.gua.make_scale_mat(0.3, 0.3, 0.3)
         self.cube_3.Material.value.set_uniform("Emissivity", 0.5)
         self.cube_3.Material.value.set_uniform("Metalness", 0.01)
         self.cube_3.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_3.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
         self.cube_3.Tags.value.append("complete_object")
-        PARENT_NODE.Children.value.append(self.cube_3)
+        self.cube_3_wrapper.Children.value.append(self.cube_3)
+        PARENT_NODE.Children.value.append(self.cube_3_wrapper)
 
         # ground
         self.ground = _loader.create_geometry_from_file("ground", "data/objects/cube.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS)
