@@ -276,7 +276,11 @@ class VooDoll(avango.script.Script):
         if node.has_field("Geometry"):
             _obj = self._loader.create_geometry_from_file(node.Name.value, VooDoll.extract_file_path(node),
                                                         avango.gua.LoaderFlags.DEFAULTS)
-            _obj.Material.connect_from(node.Material)
+            if node.has_field("Material"):
+                if not _obj.has_field("Material"):
+                    _obj.add_and_init_field(avango.gua.SFMaterial(), "Material", node.Material.value)
+
+                _obj.Material.connect_from(node.Material)
         else:
             _obj = avango.gua.nodes.TransformNode(Name=node.Name.value)
 
@@ -392,6 +396,20 @@ class VooDoll(avango.script.Script):
 
         return (time.time() - timer) > timeout
 
+    def select_object(self, node):
+        _current = node
+
+        if _current.has_field("Geometry"):
+            _geometry = self.extract_file_path(_current)
+
+            print(_geometry)
+
+            while node.Parent.value is not None and node.Parent.value.has_field("Geometry") and self.extract_file_path(node.Parent.value) == _geometry:
+                _current = _current.Parent.value
+                print(_geometry)
+
+        return _current
+
     def evaluate(self):  # implement respective base-class function
         if self.enable_flag == False:
             return
@@ -443,7 +461,7 @@ class VooDoll(avango.script.Script):
                 _obj = None
 
                 if self.state == VooDollState.DOLL_SELECTION:
-                    self.doll_ref = pick_result.Object.value
+                    self.doll_ref = self.select_object(pick_result.Object.value)
                     #self.doll_ref.value.Material.value.set_uniform("Opacity", 0.2)
                     self.sf_doll_ref_coord_mat.connect_from(self.doll_ref.WorldTransform)
                     self.doll_ref_axis.Tags.value = []
@@ -466,7 +484,7 @@ class VooDoll(avango.script.Script):
                         pointer_node.WorldTransform.value.get_translate())
                     self.state = VooDollState.NEEDLE_SELECTION
                 elif self.state == VooDollState.NEEDLE_SELECTION:
-                    self.needle_ref = pick_result.Object.value
+                    self.needle_ref = self.select_object(pick_result.Object.value)
                     _obj = self.needle = self.clone(self.needle_ref)
                     self.needle_scale_start_dist = self.get_distance_to_head(
                         pointer_node.WorldTransform.value.get_translate())
@@ -477,16 +495,8 @@ class VooDoll(avango.script.Script):
                         _obj.WorldTransform.value) * object_slot.WorldTransform.value
                     _trans_mat = avango.gua.make_trans_mat(_trans_mat.get_translate())
 
-                    #TODO: set to its origin
                     _mat = avango.gua.make_inverse_mat(self.doll_ref.WorldTransform.value) * self.doll.WorldTransform.value
                     _scale_mat = avango.gua.make_scale_mat(self.needle_ref.WorldTransform.value.get_scale()) * avango.gua.make_scale_mat(_mat.get_scale())
-
-                    print(self.doll_ref.Transform.value.get_scale())
-                    print(self.needle_ref.Transform.value.get_scale())
-                    print(_mat.get_scale())
-
-
-                    print(self.doll.Transform.value.get_scale())
 
                     self.needle_start_scale_mat = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * _obj.WorldTransform.value * _trans_mat * _scale_mat
                     _obj.Transform.value = self.needle_start_scale_mat

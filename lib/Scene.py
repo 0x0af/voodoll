@@ -176,14 +176,14 @@ class Scene():
         #
         #
         #
-        # # telephone
-        # self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        # self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
-        #     avango.gua.make_rot_mat(90.0,-1,0,0) * \
-        #     avango.gua.make_rot_mat(65.0,0,0,-1) * \
-        #     avango.gua.make_scale_mat(0.000012)
-        # self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
-        # PARENT_NODE.Children.value.append(self.telephone)
+        # telephone
+        self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_rot_mat(65.0,0,0,-1) * \
+            avango.gua.make_scale_mat(0.000012)
+        self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
+        PARENT_NODE.Children.value.append(self.telephone)
         #
         #
         # # penholder

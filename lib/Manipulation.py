@@ -63,8 +63,8 @@ class ManipulationManager(avango.script.Script):
                                   POINTER_DEVICE_STATION, HEAD_NODE)
 
         self.voodoll = VooDoll()
-        self.voodoll.my_constructor(SCENEGRAPH, NAVIGATION_NODE, TRACKING_TRANSMITTER_OFFSET, "tracking-art-pointer-1",
-                                    "device-pointer-1", "tracking-art-pointer-2", "device-pointer-2",
+        self.voodoll.my_constructor(SCENEGRAPH, NAVIGATION_NODE, TRACKING_TRANSMITTER_OFFSET, POINTER_TRACKING_STATION,
+                                    POINTER_DEVICE_STATION, "tracking-art-pointer-2", "device-pointer-2",
                                     HEAD_NODE)
 
         ### set initial states ###
