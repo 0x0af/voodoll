@@ -104,13 +104,13 @@ class VooDoll(avango.script.Script):
         _y.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 1.0, 0.0, 1.0))
         _z.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 1.0, 1.0))
         _y.Transform.value = \
-            avango.gua.make_scale_mat(self.ray_thickness * 4, 5.0, self.ray_thickness * 4)
+            avango.gua.make_scale_mat(self.ray_thickness, 2.0, self.ray_thickness)
         _x.Transform.value = \
             avango.gua.make_rot_mat(-90.0, 0, 0, 1) * \
-            avango.gua.make_scale_mat(self.ray_thickness * 4, 5.0, self.ray_thickness * 4)
+            avango.gua.make_scale_mat(self.ray_thickness, 2.0, self.ray_thickness)
         _z.Transform.value = \
             avango.gua.make_rot_mat(-90.0, 1, 0, 0) * \
-            avango.gua.make_scale_mat(self.ray_thickness * 4, 5.0, self.ray_thickness * 4)
+            avango.gua.make_scale_mat(self.ray_thickness, 2.0, self.ray_thickness)
         _trans.Children.value.append(_x)
         _trans.Children.value.append(_y)
         _trans.Children.value.append(_z)
@@ -275,7 +275,7 @@ class VooDoll(avango.script.Script):
         """
         if node.has_field("Geometry"):
             _obj = self._loader.create_geometry_from_file(node.Name.value, VooDoll.extract_file_path(node),
-                                                        avango.gua.LoaderFlags.DEFAULTS)
+                                                        avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS)
             if node.has_field("Material"):
                 if not _obj.has_field("Material"):
                     _obj.add_and_init_field(avango.gua.SFMaterial(), "Material", node.Material.value)
@@ -301,11 +301,21 @@ class VooDoll(avango.script.Script):
             self.pick_result_2 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_2))
         elif self.state == VooDollState.NEEDLE_SELECTION:
             if self.doll_pointer == VooDollPointer.POINTER_2:
-                self.pick_result_1 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_1))
+                _pick_result = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_1))
+
+                if _pick_result is not None and _pick_result.Object.value == self.doll_ref:
+                    _pick_result = None
+
+                self.pick_result_1 = _pick_result
                 self.pick_result_2 = None
             elif self.doll_pointer == VooDollPointer.POINTER_1:
+                _pick_result = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_2))
+
+                if _pick_result is not None and _pick_result.Object.value == self.doll_ref:
+                    _pick_result = None
+
                 self.pick_result_1 = None
-                self.pick_result_2 = VooDoll.filter_pick_result(self.calc_ray_intersection(self.pointer_node_2))
+                self.pick_result_2 = _pick_result
             else:
                 self.pick_result_1 = None
                 self.pick_result_2 = None
@@ -399,14 +409,8 @@ class VooDoll(avango.script.Script):
     def select_object(self, node):
         _current = node
 
-        if _current.has_field("Geometry"):
-            _geometry = self.extract_file_path(_current)
-
-            print(_geometry)
-
-            while node.Parent.value is not None and node.Parent.value.has_field("Geometry") and self.extract_file_path(node.Parent.value) == _geometry:
-                _current = _current.Parent.value
-                print(_geometry)
+        while _current.Parent.value is not None and not "complete_object" in _current.Tags.value:
+            _current = _current.Parent.value
 
         return _current
 
@@ -466,7 +470,7 @@ class VooDoll(avango.script.Script):
                     self.sf_doll_ref_coord_mat.connect_from(self.doll_ref.WorldTransform)
                     self.doll_ref_axis.Tags.value = []
                     self.doll_axis.Tags.value = []
-                    _obj = self.doll = self.clone(self.doll_ref)
+                    _obj = self.doll = self.clone(pick_result.Object.value)
 
                     _trans_mat = avango.gua.make_inverse_mat(_obj.WorldTransform.value) * object_slot.WorldTransform.value
                     _trans_mat = avango.gua.make_trans_mat(_trans_mat.get_translate())
@@ -485,7 +489,7 @@ class VooDoll(avango.script.Script):
                     self.state = VooDollState.NEEDLE_SELECTION
                 elif self.state == VooDollState.NEEDLE_SELECTION:
                     self.needle_ref = self.select_object(pick_result.Object.value)
-                    _obj = self.needle = self.clone(self.needle_ref)
+                    _obj = self.needle = self.clone(pick_result.Object.value)
                     self.needle_scale_start_dist = self.get_distance_to_head(
                         pointer_node.WorldTransform.value.get_translate())
 
@@ -616,7 +620,7 @@ class VooDoll(avango.script.Script):
             self.doll_ref_axis.Transform.value = \
                 avango.gua.make_inverse_mat(self.doll_ref_axis.Parent.value.WorldTransform.value) * \
                 avango.gua.make_trans_mat(_mat.get_translate()) * \
-                self.get_normalised_rot(_mat)
+                avango.gua.make_rot_mat(self.get_normalised_rot(_mat).get_rotate())
 
     @field_has_changed(sf_pointer_mat_1)
     def sf_pointer_mat_1_changed(self):

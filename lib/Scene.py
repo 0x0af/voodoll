@@ -104,6 +104,7 @@ class Scene():
         self.cube_1.Material.value.set_uniform("Metalness", 0.01)
         self.cube_1.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_1.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
+        self.cube_1.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.cube_1)
 
         # cube 2
@@ -115,6 +116,7 @@ class Scene():
         self.cube_2.Material.value.set_uniform("Metalness", 0.01)
         self.cube_2.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_2.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
+        self.cube_2.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.cube_2)
 
         # cube 3
@@ -126,6 +128,7 @@ class Scene():
         self.cube_3.Material.value.set_uniform("Metalness", 0.01)
         self.cube_3.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_3.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
+        self.cube_3.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.cube_3)
 
         # ground
@@ -137,11 +140,13 @@ class Scene():
         self.ground.Material.value.set_uniform("Emissivity", 0.05)
         self.ground.Material.value.set_uniform("Metalness", 0.05)
         self.ground.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.ground.Transform.value)
+        self.ground.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.ground)
 
         # tampo
         self.tampo = _loader.create_geometry_from_file("tampo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.tampo.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, 0.0) * avango.gua.make_scale_mat(0.005,0.005,0.005)
+        self.tampo.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.tampo)
 
         self.script.set_tempo(self.tampo)
@@ -177,13 +182,13 @@ class Scene():
         #
         #
         # telephone
-        self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
-            avango.gua.make_rot_mat(90.0,-1,0,0) * \
-            avango.gua.make_rot_mat(65.0,0,0,-1) * \
-            avango.gua.make_scale_mat(0.000012)
-        self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
-        PARENT_NODE.Children.value.append(self.telephone)
+        # self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        # self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
+        #     avango.gua.make_rot_mat(90.0,-1,0,0) * \
+        #     avango.gua.make_rot_mat(65.0,0,0,-1) * \
+        #     avango.gua.make_scale_mat(0.000012)
+        # self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
+        # PARENT_NODE.Children.value.append(self.telephone)
         #
         #
         # # penholder
