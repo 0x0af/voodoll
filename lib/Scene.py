@@ -96,6 +96,7 @@ class Scene():
         _loader = avango.gua.nodes.TriMeshLoader() # get trimesh loader to load external meshes
 
         # cube 1
+        self.cube_1_wrapper = avango.gua.nodes.TransformNode(Name="Cube_1")
         self.cube_1 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.cube_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.55, 0.0) * \
@@ -105,7 +106,8 @@ class Scene():
         self.cube_1.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
         self.cube_1.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
         self.cube_1.Tags.value.append("complete_object")
-        PARENT_NODE.Children.value.append(self.cube_1)
+        self.cube_1_wrapper.Children.value.append(self.cube_1)
+        PARENT_NODE.Children.value.append(self.cube_1_wrapper)
 
         # cube 2
         self.cube_2 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
@@ -145,10 +147,10 @@ class Scene():
 
         # tempo
         self.tempo = avango.gua.nodes.TransformNode(Name="Tempo")
-        self.tempo_geometry = _loader.create_geometry_from_file("tampo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.tempo_geometry.Transform.value = avango.gua.make_trans_mat((self.tempo.BoundingBox.value.Max.value + self.tempo.BoundingBox.value.Min.value) / 2 * -1) * avango.gua.make_rot_mat(-90,0.0, 1.0, 0.0) * avango.gua.make_scale_mat(0.005, 0.005, 0.005)
+        self.tempo_geometry = _loader.create_geometry_from_file("tempo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        self.tempo_geometry.Transform.value = avango.gua.make_rot_mat(-90,0.0, 1.0, 0.0) * avango.gua.make_scale_mat(0.005, 0.005, 0.005)
         self.tempo.Children.value.append(self.tempo_geometry)
-        self.tempo.Tags.value.append("complete_object")
+        self.tempo_geometry.Tags.value.append("complete_object")
         PARENT_NODE.Children.value.append(self.tempo)
         self.script.set_tempo(self.tempo)
 

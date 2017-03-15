@@ -481,7 +481,13 @@ class VooDoll(avango.script.Script):
                     self.doll_start_scale_mat = avango.gua.make_inverse_mat(object_slot.WorldTransform.value) * _obj.WorldTransform.value * _trans_mat * avango.gua.make_scale_mat(_factor)
 
                     _obj.Transform.value = self.doll_start_scale_mat
-                    self.doll_axis.Transform.value = self.get_normalised_rot(_obj.Transform.value)
+
+                    _scale_mat = avango.gua.make_scale_mat(self.get_normalised_rot(_obj.Transform.value).get_scale())
+                    _scale = avango.gua.make_inverse_mat(_scale_mat) * avango.gua.make_scale_mat(1)
+
+                    self.doll_axis.Transform.value = _obj.Transform.value * _scale
+
+                    # self.doll_axis.Transform.value = self.get_normalised_rot(_obj.Transform.value)
 
                     object_slot.Children.value.append(self.doll_axis)
                     self.doll_scale_start_dist = self.get_distance_to_head(
@@ -615,12 +621,16 @@ class VooDoll(avango.script.Script):
     @field_has_changed(sf_doll_ref_coord_mat)
     def sf_doll_ref_coord_mat_changed(self):
         if self.doll_ref_axis is not None:
-            _mat = self.sf_doll_ref_coord_mat.value
+            _scale_mat = avango.gua.make_scale_mat(self.get_normalised_rot(self.sf_doll_ref_coord_mat.value).get_scale())
+            _scale = avango.gua.make_inverse_mat(_scale_mat) * avango.gua.make_scale_mat(1)
 
-            self.doll_ref_axis.Transform.value = \
-                avango.gua.make_inverse_mat(self.doll_ref_axis.Parent.value.WorldTransform.value) * \
-                avango.gua.make_trans_mat(_mat.get_translate()) * \
-                avango.gua.make_rot_mat(self.get_normalised_rot(_mat).get_rotate())
+            self.doll_ref_axis.Transform.value = self.sf_doll_ref_coord_mat.value * _scale
+            # _mat = self.sf_doll_ref_coord_mat.value
+            #
+            # self.doll_ref_axis.Transform.value = \
+            #     avango.gua.make_inverse_mat(self.doll_ref_axis.Parent.value.WorldTransform.value) * \
+            #     avango.gua.make_trans_mat(_mat.get_translate()) * \
+            #     avango.gua.make_rot_mat(self.get_normalised_rot(_mat).get_rotate())
 
     @field_has_changed(sf_pointer_mat_1)
     def sf_pointer_mat_1_changed(self):
