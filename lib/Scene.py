@@ -46,18 +46,18 @@ class SceneScript(avango.script.Script):
             self.CLASS.reset()
 
     @staticmethod
-    def get_transform_for_time(time):
-        return avango.gua.make_trans_mat(math.sin(time)/2, 0, math.cos(time)/2)
+    def get_rotation_for_time(time):
+        return avango.gua.make_rot_mat(2 * math.degrees(time % math.pi),0.0, 1.0, 0.0)
 
     def set_tempo(self,tempo):
         self.tempo = tempo
 
     def evaluate(self):
         if self.tempo is not None:
-            _trans_mat = SceneScript.get_transform_for_time(time.time())
-            _rot_mat = avango.gua.make_rot_mat(self.tempo.Transform.value.get_rotate())
+            _trans_mat = avango.gua.make_trans_mat(0.0, 0.05, 0.5)
+            _rot_mat = self.get_rotation_for_time(time.time())
             _scale_mat = avango.gua.make_scale_mat(self.tempo.Transform.value.get_scale())
-            self.tempo.Transform.value = _trans_mat * _rot_mat * _scale_mat
+            self.tempo.Transform.value = _rot_mat * _trans_mat * _scale_mat
 
 
 class Scene():
@@ -79,8 +79,8 @@ class Scene():
         self.scene_light = avango.gua.nodes.LightNode(Name = "scene_light")
         self.scene_light.Type.value = avango.gua.LightType.SPOT
         self.scene_light.Color.value = avango.gua.Color(1.0,0.8,0.8)
-        self.scene_light.Brightness.value = 40.0
-        self.scene_light.Falloff.value = 0.01 # exponent
+        self.scene_light.Brightness.value = 80.0
+        self.scene_light.Falloff.value = 0.1 # exponent
         self.scene_light.EnableShadows.value = True
         self.scene_light.ShadowMapSize.value = 2048
         self.scene_light.ShadowOffset.value = 0.001
@@ -139,12 +139,14 @@ class Scene():
         self.ground.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.ground.Transform.value)
         PARENT_NODE.Children.value.append(self.ground)
 
-        # tampo
-        self.tampo = _loader.create_geometry_from_file("tampo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.tampo.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, 0.0) * avango.gua.make_scale_mat(0.005,0.005,0.005)
-        PARENT_NODE.Children.value.append(self.tampo)
+        # tempo
+        self.tempo = avango.gua.nodes.TransformNode(Name="Tempo")
+        self.tempo_geometry = _loader.create_geometry_from_file("tampo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        self.tempo_geometry.Transform.value = avango.gua.make_trans_mat((self.tempo.BoundingBox.value.Max.value + self.tempo.BoundingBox.value.Min.value) / 2 * -1) * avango.gua.make_rot_mat(-90,0.0, 1.0, 0.0) * avango.gua.make_scale_mat(0.005, 0.005, 0.005)
+        self.tempo.Children.value.append(self.tempo_geometry)
+        PARENT_NODE.Children.value.append(self.tempo)
 
-        self.script.set_tempo(self.tampo)
+        self.script.set_tempo(self.tempo)
 
         # # table
         # self.table = _loader.create_geometry_from_file("table", "/opt/3d_models/Jacobs_Models/table_ikea/table_ikea.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
@@ -177,13 +179,13 @@ class Scene():
         #
         #
         # telephone
-        self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
-            avango.gua.make_rot_mat(90.0,-1,0,0) * \
-            avango.gua.make_rot_mat(65.0,0,0,-1) * \
-            avango.gua.make_scale_mat(0.000012)
-        self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
-        PARENT_NODE.Children.value.append(self.telephone)
+        # self.telephone = _loader.create_geometry_from_file("telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        # self.telephone.Transform.value = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
+        #     avango.gua.make_rot_mat(90.0,-1,0,0) * \
+        #     avango.gua.make_rot_mat(65.0,0,0,-1) * \
+        #     avango.gua.make_scale_mat(0.000012)
+        # self.telephone.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.telephone.Transform.value)
+        # PARENT_NODE.Children.value.append(self.telephone)
         #
         #
         # # penholder
