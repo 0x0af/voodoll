@@ -4,10 +4,12 @@
 import avango
 import avango.gua
 import avango.script
+import time
+
+import math
 from avango.script import field_has_changed
 
 ### import python libraries
-
 
 
 class SceneScript(avango.script.Script):
@@ -29,6 +31,9 @@ class SceneScript(avango.script.Script):
 
         self.sf_reset_button.connect_from(self.keyboard_device_sensor.Button14) # spacebar key
 
+        self.tempo = None
+        self.always_evaluate(True)
+
 
     def my_constructor(self, CLASS):
         self.CLASS = CLASS
@@ -39,10 +44,23 @@ class SceneScript(avango.script.Script):
     def sf_reset_button_changed(self):
         if self.sf_reset_button.value == True and self.CLASS is not None: # button pressed
             self.CLASS.reset()
-            
+
+    @staticmethod
+    def get_transform_for_time(time):
+        return avango.gua.make_trans_mat(math.sin(time)/2, 0, math.cos(time)/2)
+
+    def set_tempo(self,tempo):
+        self.tempo = tempo
+
+    def evaluate(self):
+        if self.tempo is not None:
+            _trans_mat = SceneScript.get_transform_for_time(time.time())
+            _rot_mat = avango.gua.make_rot_mat(self.tempo.Transform.value.get_rotate())
+            _scale_mat = avango.gua.make_scale_mat(self.tempo.Transform.value.get_scale())
+            self.tempo.Transform.value = _trans_mat * _rot_mat * _scale_mat
 
 
-class Scene:
+class Scene():
 
     ## constructor
     def __init__(self,
@@ -53,10 +71,9 @@ class Scene:
         ### external reference ###
         self.PARENT_NODE = PARENT_NODE
 
-        ### resources ###                
+        ### resources ###
         self.script = SceneScript()
         self.script.my_constructor(self)
-
 
         ## init scene light
         self.scene_light = avango.gua.nodes.LightNode(Name = "scene_light")
@@ -81,44 +98,53 @@ class Scene:
         # cube 1
         self.cube_1 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.cube_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.4, 0.0) * \
+        self.cube_1.Transform.value = avango.gua.make_trans_mat(0.0, 0.55, 0.0) * \
                                       avango.gua.make_scale_mat(0.1, 0.1, 0.1)
         self.cube_1.Material.value.set_uniform("Emissivity", 0.5)
-        self.cube_1.Material.value.set_uniform("Metalness", 0.1)
-        self.cube_1.Material.value.set_uniform("Color", avango.gua.Vec4(1.0, 0.0, 0.0, 1.0))
+        self.cube_1.Material.value.set_uniform("Metalness", 0.01)
+        self.cube_1.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
+        self.cube_1.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
         PARENT_NODE.Children.value.append(self.cube_1)
 
         # cube 2
         self.cube_2 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
                                                         avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.cube_2.Transform.value = avango.gua.make_trans_mat(-0.2, 0.4, 0.0) * \
-                                      avango.gua.make_scale_mat(0.2, 0.2, 0.2) * \
-                                      avango.gua.make_rot_mat(45, 0, 1, 0)
+        self.cube_2.Transform.value = avango.gua.make_trans_mat(0.0, 0.4, 0.0) * \
+                                      avango.gua.make_scale_mat(0.2, 0.2, 0.2)
         self.cube_2.Material.value.set_uniform("Emissivity", 0.5)
-        self.cube_2.Material.value.set_uniform("Metalness", 0.1)
-        self.cube_2.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 1.0, 0.0, 1.0))
+        self.cube_2.Material.value.set_uniform("Metalness", 0.01)
+        self.cube_2.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
+        self.cube_2.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
         PARENT_NODE.Children.value.append(self.cube_2)
 
-        # sphere
-        self.sphere = _loader.create_geometry_from_file("sphere", "data/objects/sphere.obj",
-                                                        avango.gua.LoaderFlags.DEFAULTS| avango.gua.LoaderFlags.MAKE_PICKABLE)
-        self.sphere.Transform.value = avango.gua.make_trans_mat(0.2, 0.2, 0.0) * \
-                                      avango.gua.make_scale_mat(0.1, 0.1, 0.1)
-        self.sphere.Material.value.set_uniform("Emissivity", 0.5)
-        self.sphere.Material.value.set_uniform("Metalness", 0.1)
-        self.sphere.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 0.0, 1.0, 1.0))
-        PARENT_NODE.Children.value.append(self.sphere)
+        # cube 3
+        self.cube_3 = _loader.create_geometry_from_file("cube", "data/objects/cube.obj",
+                                                        avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        self.cube_3.Transform.value = avango.gua.make_trans_mat(0.0, 0.15, 0.0) * \
+                                      avango.gua.make_scale_mat(0.3, 0.3, 0.3)
+        self.cube_3.Material.value.set_uniform("Emissivity", 0.5)
+        self.cube_3.Material.value.set_uniform("Metalness", 0.01)
+        self.cube_3.Material.value.set_uniform("ColorMap", "data/textures/box1/wood_diffuse.jpg")
+        self.cube_3.Material.value.set_uniform("NormalMap", "data/textures/box1/wood_normal.jpg")
+        PARENT_NODE.Children.value.append(self.cube_3)
 
         # ground
         self.ground = _loader.create_geometry_from_file("ground", "data/objects/cube.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS)
-        self.ground.Transform.value = avango.gua.make_trans_mat(0.0,-0.17,0.0) * \
-            avango.gua.make_scale_mat(1.0,0.005,1.0)
-        self.ground.Material.value.set_uniform("Color", avango.gua.Vec4(0.7,0.7,1.0, 1.0))
-        self.ground.Material.value.set_uniform("Emissivity", 0.5)
-        self.ground.Material.value.set_uniform("Metalness", 0.1)
+        self.ground.Transform.value = avango.gua.make_trans_mat(0.0,0.0,0.0) * \
+            avango.gua.make_scale_mat(2.0,0.005,2.0)
+        self.ground.Material.value.set_uniform("ColorMap", "data/textures/ground/bricks_diffuse.jpg")
+        self.ground.Material.value.set_uniform("NormalMap", "data/textures/ground/bricks_normal.jpg")
+        self.ground.Material.value.set_uniform("Emissivity", 0.05)
+        self.ground.Material.value.set_uniform("Metalness", 0.05)
         self.ground.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.ground.Transform.value)
         PARENT_NODE.Children.value.append(self.ground)
 
+        # tampo
+        self.tampo = _loader.create_geometry_from_file("tampo", "data/objects/tampo/Tempo.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+        self.tampo.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, 0.0) * avango.gua.make_scale_mat(0.005,0.005,0.005)
+        PARENT_NODE.Children.value.append(self.tampo)
+
+        self.script.set_tempo(self.tampo)
 
         # # table
         # self.table = _loader.create_geometry_from_file("table", "/opt/3d_models/Jacobs_Models/table_ikea/table_ikea.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
@@ -177,7 +203,6 @@ class Scene:
         #     avango.gua.make_scale_mat(0.01)
         # self.calculator.add_and_init_field(avango.gua.SFMatrix4(), "HomeMatrix", self.calculator.Transform.value)
         # PARENT_NODE.Children.value.append(self.calculator)
-
 
     ### functions ###
     def reset(self):
