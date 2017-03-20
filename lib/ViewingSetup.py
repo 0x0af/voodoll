@@ -3,6 +3,7 @@
 ### import guacamole libraries
 import avango
 import avango.gua
+import avango.gua as av
 import avango.daemon
 
 ### import application libraries
@@ -15,18 +16,19 @@ class StereoViewingSetup:
     ### constructor
     def __init__(self,
         SCENEGRAPH = None,
-        WINDOW_RESOLUTION = avango.gua.Vec2ui(1024, 1024), # in pixel
-        SCREEN_DIMENSIONS = avango.gua.Vec2(0.3, 0.3), # in meter        
-        LEFT_SCREEN_POSITION = avango.gua.Vec2ui(0, 0), # in pixel
-        LEFT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1024, 1024), # in pixel
-        RIGHT_SCREEN_POSITION = avango.gua.Vec2ui(0, 0), # in pixel
-        RIGHT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1024, 1024), # in pixel   
-        SCREEN_MATRIX = avango.gua.make_identity_mat(),
+        PHYSICS = None,
+        WINDOW_RESOLUTION = av.Vec2ui(1024, 1024), # in pixel
+        SCREEN_DIMENSIONS = av.Vec2(0.3, 0.3), # in meter        
+        LEFT_SCREEN_POSITION = av.Vec2ui(0, 0), # in pixel
+        LEFT_SCREEN_RESOLUTION = av.Vec2ui(1024, 1024), # in pixel
+        RIGHT_SCREEN_POSITION = av.Vec2ui(0, 0), # in pixel
+        RIGHT_SCREEN_RESOLUTION = av.Vec2ui(1024, 1024), # in pixel   
+        SCREEN_MATRIX = av.make_identity_mat(),
         STEREO_FLAG = False,
-        STEREO_MODE = avango.gua.StereoMode.ANAGLYPH_RED_CYAN,
+        STEREO_MODE = av.StereoMode.ANAGLYPH_RED_CYAN,
         HEADTRACKING_FLAG = False,
         HEADTRACKING_STATION = None,
-        TRACKING_TRANSMITTER_OFFSET = avango.gua.make_identity_mat(),
+        TRACKING_TRANSMITTER_OFFSET = av.make_identity_mat(),
         ):
 
         ### resources ###
@@ -34,7 +36,7 @@ class StereoViewingSetup:
         self.shell = GuaVE()
 
         ## init window
-        self.window = avango.gua.nodes.Window(Title = "window")
+        self.window = av.nodes.Window(Title = "window")
         self.window.Size.value = WINDOW_RESOLUTION
         self.window.LeftPosition.value = LEFT_SCREEN_POSITION
         self.window.LeftResolution.value = LEFT_SCREEN_RESOLUTION
@@ -42,48 +44,49 @@ class StereoViewingSetup:
         self.window.RightResolution.value = RIGHT_SCREEN_RESOLUTION
         self.window.EnableVsync.value = True
         
-        avango.gua.register_window(self.window.Title.value, self.window) 
+        av.register_window(self.window.Title.value, self.window) 
 
 
         ## init viewer
-        self.viewer = avango.gua.nodes.Viewer()
+        self.viewer = av.nodes.Viewer()
         self.viewer.SceneGraphs.value = [SCENEGRAPH]
+        self.viewer.Physics.value = PHYSICS
         self.viewer.Windows.value = [self.window]
         self.viewer.DesiredFPS.value = 60.0 # in Hz
 
 
         ## init passes & render pipeline description
-        self.resolve_pass = avango.gua.nodes.ResolvePassDescription()
+        self.resolve_pass = av.nodes.ResolvePassDescription()
         self.resolve_pass.EnableSSAO.value = False
         self.resolve_pass.SSAOIntensity.value = 4.0
         self.resolve_pass.SSAOFalloff.value = 10.0
         self.resolve_pass.SSAORadius.value = 7.0
         #self.resolve_pass.EnableScreenSpaceShadow.value = True
-        self.resolve_pass.EnvironmentLightingColor.value = avango.gua.Color(0.2, 0.2, 0.2)
-        self.resolve_pass.ToneMappingMode.value = avango.gua.ToneMappingMode.UNCHARTED
+        self.resolve_pass.EnvironmentLightingColor.value = av.Color(0.2, 0.2, 0.2)
+        self.resolve_pass.ToneMappingMode.value = av.ToneMappingMode.UNCHARTED
         self.resolve_pass.Exposure.value = 1.0
 
-        #self.resolve_pass.BackgroundMode.value = avango.gua.BackgroundMode.COLOR
-        #self.resolve_pass.BackgroundColor.value = avango.gua.Color(0.45, 0.5, 0.6)        
-        self.resolve_pass.BackgroundMode.value = avango.gua.BackgroundMode.SKYMAP_TEXTURE        
+        #self.resolve_pass.BackgroundMode.value = av.BackgroundMode.COLOR
+        #self.resolve_pass.BackgroundColor.value = av.Color(0.45, 0.5, 0.6)        
+        self.resolve_pass.BackgroundMode.value = av.BackgroundMode.SKYMAP_TEXTURE        
         self.resolve_pass.BackgroundTexture.value = "/opt/guacamole/resources/skymaps/DH216SN.png"
 
-        self.pipeline_description = avango.gua.nodes.PipelineDescription(Passes = [])
+        self.pipeline_description = av.nodes.PipelineDescription(Passes = [])
         self.pipeline_description.EnableABuffer.value = True        
-        self.pipeline_description.Passes.value.append(avango.gua.nodes.TriMeshPassDescription())
-        self.pipeline_description.Passes.value.append(avango.gua.nodes.LightVisibilityPassDescription())
+        self.pipeline_description.Passes.value.append(av.nodes.TriMeshPassDescription())
+        self.pipeline_description.Passes.value.append(av.nodes.LightVisibilityPassDescription())
         self.pipeline_description.Passes.value.append(self.resolve_pass)
-        self.pipeline_description.Passes.value.append(avango.gua.nodes.TexturedScreenSpaceQuadPassDescription())        
-        self.pipeline_description.Passes.value.append(avango.gua.nodes.SSAAPassDescription())
+        self.pipeline_description.Passes.value.append(av.nodes.TexturedScreenSpaceQuadPassDescription())        
+        self.pipeline_description.Passes.value.append(av.nodes.SSAAPassDescription())
 
 
         ## init navigation node
-        self.navigation_node = avango.gua.nodes.TransformNode(Name = "navigation_node")
+        self.navigation_node = av.nodes.TransformNode(Name = "navigation_node")
         SCENEGRAPH.Root.value.Children.value.append(self.navigation_node)
         
         ## init head node
-        self.head_node = avango.gua.nodes.TransformNode(Name = "head_node")
-        self.head_node.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, 0.6) # default head position
+        self.head_node = av.nodes.TransformNode(Name = "head_node")
+        self.head_node.Transform.value = av.make_trans_mat(0.0, 0.0, 0.6) # default head position
         self.navigation_node.Children.value.append(self.head_node)
 
         if HEADTRACKING_FLAG == True:
@@ -95,7 +98,7 @@ class StereoViewingSetup:
 
 
         ## init screen node
-        self.screen_node = avango.gua.nodes.ScreenNode(Name = "screen_node")
+        self.screen_node = av.nodes.ScreenNode(Name = "screen_node")
         self.screen_node.Width.value = SCREEN_DIMENSIONS.x
         self.screen_node.Height.value = SCREEN_DIMENSIONS.y
         self.screen_node.Transform.value = SCREEN_MATRIX
@@ -103,7 +106,7 @@ class StereoViewingSetup:
         
 
         ## init camera node
-        self.camera_node = avango.gua.nodes.CameraNode(Name = "camera_node")
+        self.camera_node = av.nodes.CameraNode(Name = "camera_node")
         self.camera_node.SceneGraph.value = SCENEGRAPH.Name.value
         self.camera_node.LeftScreenPath.value = self.screen_node.Path.value
         self.camera_node.RightScreenPath.value = self.screen_node.Path.value

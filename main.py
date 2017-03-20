@@ -3,6 +3,7 @@
 ### import guacamole libraries
 import avango
 import avango.gua
+import avango.gua as av
 
 
 ### import application libraries
@@ -15,13 +16,12 @@ from lib.Manipulation import ManipulationManager
 
 def start():
 
-
     ## create scenegraph
-    scenegraph = avango.gua.nodes.SceneGraph(Name = "scenegraph")
+    physics = av.nodes.Physics()
+    scenegraph = av.nodes.SceneGraph(Name = "scenegraph")
 
     ## init scene
-    scene = Scene(PARENT_NODE = scenegraph.Root.value)
-
+    scene = Scene(PARENT_NODE = scenegraph.Root.value, PHYSICS = physics)
 
     ## init navigation technique
     deviceInput = NewSpacemouseInput()
@@ -29,7 +29,7 @@ def start():
         
     steeringNavigation = SteeringNavigation()
     steeringNavigation.my_constructor(deviceInput.mf_dof, deviceInput.mf_buttons, 0.15, 1.0) # connect navigation with spacemouse input
-    steeringNavigation.set_start_matrix(avango.gua.make_trans_mat(0.0,0.2,0.25))
+    steeringNavigation.set_start_matrix(av.make_trans_mat(0.0,0.2,0.25))
 
     ## init viewing setup
     ## init viewing and interaction setups
@@ -39,16 +39,17 @@ def start():
     print("wokstation:", hostname)
 
     if hostname == "orestes": # Mitsubishi 3D-TV workstation
-        _tracking_transmitter_offset = avango.gua.make_trans_mat(-0.98, -(0.58 + 0.975), 0.27 + 3.48) * avango.gua.make_rot_mat(90.0,0,1,0) # transformation into tracking coordinate system 
+        _tracking_transmitter_offset = av.make_trans_mat(-0.98, -(0.58 + 0.975), 0.27 + 3.48) * av.make_rot_mat(90.0,0,1,0) # transformation into tracking coordinate system 
 
         viewingSetup = StereoViewingSetup(
             SCENEGRAPH = scenegraph,
-            WINDOW_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
-            SCREEN_DIMENSIONS = avango.gua.Vec2(1.445, 0.81),
-            LEFT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
-            RIGHT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
+            PHYSICS=physics,
+            WINDOW_RESOLUTION = av.Vec2ui(1920, 1080),
+            SCREEN_DIMENSIONS = av.Vec2(1.445, 0.81),
+            LEFT_SCREEN_RESOLUTION = av.Vec2ui(1920, 1080),
+            RIGHT_SCREEN_RESOLUTION = av.Vec2ui(1920, 1080),
             STEREO_FLAG = True,
-            STEREO_MODE = avango.gua.StereoMode.CHECKERBOARD,
+            STEREO_MODE = av.StereoMode.CHECKERBOARD,
             HEADTRACKING_FLAG = True,
             HEADTRACKING_STATION = "tracking-art-glasses-1", # wired 3D-TV glasses on Mitsubishi 3D-TV workstation
             TRACKING_TRANSMITTER_OFFSET = _tracking_transmitter_offset,
@@ -66,18 +67,19 @@ def start():
             )
 
     elif hostname == "athena": # small powerwall workstation
-        _tracking_transmitter_offset = avango.gua.make_trans_mat(0.0,-1.42,1.6) # transformation into tracking coordinate system
+        _tracking_transmitter_offset = av.make_trans_mat(0.0,-1.42,1.6) # transformation into tracking coordinate system
 
         viewingSetup = StereoViewingSetup(
             SCENEGRAPH = scenegraph,
-            WINDOW_RESOLUTION = avango.gua.Vec2ui(1920*2, 1200),
-            SCREEN_DIMENSIONS = avango.gua.Vec2(3.0, 2.0),
-            LEFT_SCREEN_POSITION = avango.gua.Vec2ui(140, 0),
-            LEFT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1780, 1185),
-            RIGHT_SCREEN_POSITION = avango.gua.Vec2ui(1920, 0),
-            RIGHT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1780, 1185),
+            PHYSICS=physics,
+            WINDOW_RESOLUTION = av.Vec2ui(1920*2, 1200),
+            SCREEN_DIMENSIONS = av.Vec2(3.0, 2.0),
+            LEFT_SCREEN_POSITION = av.Vec2ui(140, 0),
+            LEFT_SCREEN_RESOLUTION = av.Vec2ui(1780, 1185),
+            RIGHT_SCREEN_POSITION = av.Vec2ui(1920, 0),
+            RIGHT_SCREEN_RESOLUTION = av.Vec2ui(1780, 1185),
             STEREO_FLAG = True,
-            STEREO_MODE = avango.gua.StereoMode.SIDE_BY_SIDE,
+            STEREO_MODE = av.StereoMode.SIDE_BY_SIDE,
             HEADTRACKING_FLAG = True,
             HEADTRACKING_STATION = "tracking-art-glasses-2", # small powerwall polarization glasses
             TRACKING_TRANSMITTER_OFFSET = _tracking_transmitter_offset,
@@ -94,16 +96,17 @@ def start():
             )
 
     elif hostname == "kronos": # Samsung 3D-TV workstation
-        _tracking_transmitter_offset = avango.gua.make_trans_mat(0.0, -0.5, 0.6) # transformation into tracking coordinate system 
+        _tracking_transmitter_offset = av.make_trans_mat(0.0, -0.5, 0.6) # transformation into tracking coordinate system 
 
         viewingSetup = StereoViewingSetup(
             SCENEGRAPH = scenegraph,
-            WINDOW_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
-            SCREEN_DIMENSIONS = avango.gua.Vec2(1.235, 0.7),
-            LEFT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
-            RIGHT_SCREEN_RESOLUTION = avango.gua.Vec2ui(1920, 1080),
+            PHYSICS=physics,
+            WINDOW_RESOLUTION = av.Vec2ui(1920, 1080),
+            SCREEN_DIMENSIONS = av.Vec2(1.235, 0.7),
+            LEFT_SCREEN_RESOLUTION = av.Vec2ui(1920, 1080),
+            RIGHT_SCREEN_RESOLUTION = av.Vec2ui(1920, 1080),
             STEREO_FLAG = True,
-            STEREO_MODE = avango.gua.StereoMode.CHECKERBOARD,
+            STEREO_MODE = av.StereoMode.CHECKERBOARD,
             HEADTRACKING_FLAG = True,
             HEADTRACKING_STATION = "tracking-pst-glasses-1", # wired 3D-TV glasses on Samsung 3D-TV workstation
             TRACKING_TRANSMITTER_OFFSET = _tracking_transmitter_offset,
